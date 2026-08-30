@@ -65,6 +65,9 @@ Browser mic → webm(base64 JSON, chunked btoa) → `POST /api/stt` → Sarvam `
 11. CDSCO batch-level PDFs sit behind `this.form.submit()` POST forms — BY DESIGN we cite the alerts INDEX + live search hits, not batch numbers. This is in the submission's limitations line; don't burn time trying to scrape the PDFs.
 12. Sarvam free credits ₹100 (non-expiring), rate limits: most 60/min, bulbul:v3 = 30/min, sarvam-105b = 40/min. Anakin: 60/min search+scrape, 20/min Wire.
 
+## Learnings
+**`.claude/LEARNINGS.md`** — every gotcha already paid for: Sarvam needs native script (romanized Hindi mistranslates stomach->chest), `sarvam-105b` vs `-conversations` (43.5s vs 7.8s, same verdict), openFDA indexes the NAME only, Anakin JSON via the `html` field, which regulator pages are nav chrome, real Wire action ids. Read it before touching an evidence source or a model choice.
+
 ## File map (everything that exists, all under /Users/kingmohan45/Documents/30thAug/)
 - `CLAUDE.md` — this file.
 - `app/server.js` — whole backend (~180 lines). `app/public/index.html` — whole UI. `app/.env` — Sarvam key SET, Anakin EMPTY. `app/cache/` — response cache (empty until Anakin runs).
