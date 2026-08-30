@@ -301,7 +301,7 @@ app.post("/api/stt", async (req, res) => {
       drugLatin = (await sarvamChat([
         { role: "system", content: "Extract the medicine/brand name and strength from the user text. Reply ONLY the name in Latin/English script with digits (e.g. Dolo 650). No other words." },
         { role: "user", content: out.transcript },
-      ])).trim();
+      ], 200, "sarvam-105b-conversations")).trim();
     } catch (e) { console.error("extract skipped:", e.message); }
     res.json({ transcript: out.transcript, drugLatin, detectedLang: out.language_code });
   } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
@@ -588,11 +588,22 @@ app.get("/api/interpret/stream", async (req, res) => {
     const clinicalP = speaker !== "patient" ? Promise.resolve(null) : (async () => {
       const en = from === "en-IN" ? text : await sarvamTranslateTo(text, from, "en-IN");
       const raw = await sarvamChat([
-        { role: "system", content: 'You help a doctor understand a patient who does not share their language. Reply ONLY minified JSON: {"complaint":"<=14 words chief complaint in clinical English","duration":"<=6 words or empty","redFlags":["urgent finding", ...],"askBack":["<=12 word follow-up question the doctor should ask, phrased for the patient", ...up to 3]}. Never diagnose and never name a medicine.' },
+        { role: "system", content: 'You help a doctor understand a patient who does not share their language. Reply ONLY minified JSON: {"complaint":"<=14 words chief complaint in clinical English","duration":"<=6 words or empty","redFlags":["urgent finding", ...],"askBack":["<=12 word follow-up question the doctor should ask, phrased for the patient", ...up to 3],"suggestions":[{"name":"generic drug or class commonly used for this, e.g. paracetamol / proton pump inhibitor","whatFor":"<=6 words"}, ...up to 3]}. suggestions are for the DOCTOR, generic names or classes only, never brands, never doses. askBack must not name medicines.' },
         { role: "user", content: `Patient said: "${en}"` },
       ], 1500, "sarvam-105b-conversations");
       const cl = extractJson(raw);
-      send("clinical", { clinical: cl });
+      // The cross-border screen: every candidate the model floats is checked against the WHO
+      // falsified/substandard product alert index, read from the warm store (never the network).
+      // A hit ships the matching alert lines as the receipt, not just a boolean.
+      const whoMd = whoAlertIndex();
+      const flagged = [];
+      for (const sg of (cl && cl.suggestions) || []) {
+        const words = String(sg.name).toLowerCase().split(/\s+/).filter((w) => w.length >= 5);
+        const lines = whoMd ? whoMd.split("\n").filter((l) => { const ll = l.toLowerCase(); return words.some((w) => ll.includes(w)); }).slice(0, 2) : [];
+        if (lines.length) flagged.push({ name: sg.name, lines });
+      }
+      send("clinical", { clinical: cl, flagged,
+        evidence: { whoChars: WARM.who.chars, whoAgeSec: WARM.who.at ? Math.round((Date.now() - WARM.who.at) / 1000) : null } });
       return cl;
     })();
 

@@ -8,7 +8,7 @@ const LNAME = Object.fromEntries(LANGS);
 const VKEY = "davaa.visits.v1";
 const OLDKEY = "davaa.interpret.v2";   // the tabbed page's flat thread, imported once
 const VAD_ON = 0.075;    // level at which we call it speech
-const VAD_HANG = 700;    // silence that ends an utterance, ms
+const VAD_HANG = 550;    // measured: 550ms of true silence is a finished sentence    // silence that ends an utterance, ms
 const SEG_MIN = 700;     // shorter than this is a cough, not a sentence
 const SEG_MAX = 22000;   // REST STT is capped under 30s
 
@@ -239,19 +239,24 @@ function repaint(t) {
 }
 
 /* ---------- the note: the whole visit, not the last sentence ---------- */
+let evidence = null; // {whoChars, whoAgeSec} from the last clinical event
 function paintNote() {
   const el = $("note"), v = cur();
   el.innerHTML = "";
-  const flags = [], asks = [];
+  const flags = [], asks = [], sugg = new Map();
   let complaint = null, duration = "";
   for (const t of v.turns) {
     const c = t.clinical; if (!c) continue;
     if (c.complaint && !complaint) { complaint = c.complaint; duration = c.duration || ""; }
     for (const f of c.redFlags || []) if (!flags.includes(f)) flags.push(f);
     for (const q of c.askBack || []) if (!asks.includes(q)) asks.push(q);
+    for (const sg of c.suggestions || []) {
+      const hit = (t.flagged || []).find((x) => x.name === sg.name);
+      if (!sugg.has(sg.name)) sugg.set(sg.name, { whatFor: sg.whatFor || "", who: hit || null });
+    }
   }
   $("ncount").textContent = v.turns.length ? v.turns.length + " turns" : "";
-  if (!complaint && !flags.length && !asks.length) {
+  if (!complaint && !flags.length && !asks.length && !sugg.size) {
     const e = document.createElement("div"); e.className = "empty";
     e.style.margin = "0"; e.style.textAlign = "left";
     e.textContent = "The note writes itself as the patient talks.";
@@ -269,11 +274,31 @@ function paintNote() {
   if (flags.length) row("red flags", (r) => {
     for (const f of flags) { const d = document.createElement("div"); d.className = "rfx"; d.textContent = f; r.appendChild(d); }
   });
+  if (sugg.size) row("candidates for the doctor · screened against WHO alerts", (r) => {
+    for (const [name, m] of sugg) {
+      const d = document.createElement("div"); d.className = "sug" + (m.who ? " bad" : "");
+      const b = document.createElement("b"); b.textContent = name; d.appendChild(b);
+      if (m.whatFor) { const f = document.createElement("span"); f.className = "sf"; f.textContent = m.whatFor; d.appendChild(f); }
+      if (m.who) {
+        const c = document.createElement("span"); c.className = "sc";
+        c.textContent = "Named in a WHO medical product alert — check before prescribing"; d.appendChild(c);
+        for (const ln of m.who.lines || []) { const w = document.createElement("span"); w.className = "wl"; w.textContent = ln.replace(/\|/g, " ").replace(/\s+/g, " ").trim().slice(0, 110); d.appendChild(w); }
+      } else {
+        const c = document.createElement("span"); c.className = "ok"; c.textContent = "no WHO alert names it"; d.appendChild(c);
+      }
+      r.appendChild(d);
+    }
+  });
   if (asks.length) row("ask next", (r) => {
     const u = document.createElement("ul");
     for (const q of asks.slice(-6)) { const li = document.createElement("li"); li.className = "qq"; li.textContent = q; u.appendChild(li); }
     r.appendChild(u);
   });
+  if (evidence && evidence.whoChars) {
+    const e = document.createElement("div"); e.className = "evline";
+    e.textContent = `evidence: WHO product-alert index, ${evidence.whoChars.toLocaleString()} chars, read live via Anakin · refreshed ${evidence.whoAgeSec != null ? Math.round(evidence.whoAgeSec / 60) + " min ago" : "at boot"}`;
+    el.appendChild(e);
+  }
 }
 function paintAll() { paintHistory(); paintThread(); paintNote(); }
 
@@ -326,7 +351,10 @@ function interpret(spokenText, who, existing) {
     save();
   });
   es.addEventListener("clinical", (m) => {
-    turn.clinical = JSON.parse(m.data).clinical || null;
+    const d = JSON.parse(m.data);
+    turn.clinical = d.clinical || null;
+    turn.flagged = d.flagged || [];
+    if (d.evidence) evidence = d.evidence;
     if (showing()) { repaint(turn); paintNote(); }
     save();
   });
@@ -418,7 +446,9 @@ async function sendSegment(blob) {
   const turn = startTurn("", who, "transcribing");
   if ($("iauto").checked) setSpeaker(who === "patient" ? "doctor" : "patient");
   try {
-    const d = await sttBlob(blob, false);
+    // fast=true: transcript only. The full path runs a reasoning-model drug-name extraction the
+    // clinic never reads — it was the bulk of the "transcribing" wait.
+    const d = await sttBlob(blob, true);
     const val = d && (d.transcript || d.drugLatin || "");
     if (!val) { dropTurn(turn); setState(callOn ? "listening" : "ended", ""); return; }
     setState(callOn ? "listening" : "ended", "");
