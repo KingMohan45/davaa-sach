@@ -7,3 +7,7 @@ app/cache/
 app/public/deck/team/facecrop
 .claude/settings.local.json
 *.log
+
+# Working notes and agent context — not for the public repo
+.claude/
+CLAUDE.md

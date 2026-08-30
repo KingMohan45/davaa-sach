@@ -158,6 +158,47 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
   padding:6px 13px;box-shadow:3px 3px 0 var(--void,#020B0B);transition:.15s}
 .navlink:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--void,#020B0B)}
 .navlink.alt{background:var(--sky,#7CB9E8)} .navlink.alt2{background:var(--peach,#FDA481)}
+
+/* Phone. The header is a single flex row built for a laptop: the brand is nowrap and .pair is
+   pushed right with margin-left:auto, so on a 390px screen .pair gets ~90px and stacks its eight
+   controls one per line — an 800px-tall header that pushes the whole clinic off the screen.
+   Give the brand its own line and let the controls flow in rows. */
+@media(max-width:760px){
+  header{flex-wrap:wrap;gap:9px;padding:10px 13px}
+  .brand{font-size:14.5px;white-space:normal;flex:1 1 100%}
+  .pair{margin-left:0;width:100%;gap:6px}
+  .pair .tag{flex:0 0 auto}
+  select.pill{flex:1 1 108px;min-width:0}
+  .swap{padding:0}
+  .ghost,.navlink{font-size:10px;padding:6px 10px}
+  .colhead{padding:10px 13px 7px}
+  .thread{padding:14px;gap:12px}
+  .composer{padding:11px 13px}
+  .cbar{gap:9px}
+  .mic{width:54px;flex:0 0 54px;height:54px;font-size:10px}
+  .cin{padding:13px 16px;font-size:14.5px}
+  .send{padding:0 16px;height:48px;font-size:14px}
+  .endbtn{flex:0 0 50px;width:50px;height:50px}
+  .turnrow{gap:6px;margin-bottom:9px}
+  .hint{gap:6px}
+  .ex{font-size:10.5px;padding:6px 9px}
+}
+/* Narrow phones: the mic + field + Send row cannot hold all three, and Send is what falls off the
+   right edge. Drop Send to its own full-width line instead of clipping it. */
+@media(max-width:430px){
+  .cbar{flex-wrap:wrap}
+  .cin{flex:1 1 auto}
+  .send{flex:1 1 100%;order:3;height:46px}
+  /* Every pixel the header keeps is a pixel the transcript loses, and the transcript is the
+     screen. Shrink the chrome rather than letting it take a third of a small phone. */
+  header{padding:8px 11px;gap:7px}
+  .brand{font-size:13px}
+  .pair{gap:5px}
+  .tag{font-size:8.5px}
+  select.pill{flex:1 1 96px;font-size:10.5px;padding:5px 7px}
+  .ghost,.navlink{font-size:9.5px;padding:5px 8px;letter-spacing:.06em}
+  .dot{width:8px;height:8px;margin-right:6px}
+}
 </style>
 <script>
 // The app is served both at the domain root and mounted under /doctorglobe. Every API call below
@@ -193,7 +234,7 @@ window.APP_BASE = (location.pathname.match(/^(\/[^/]+)(?:\/|$)/) || ["", ""])[1]
       <div class="turnrow">
         <button class="pill spk on" id="sp-pat">Patient speaks</button>
         <button class="pill spk" id="sp-doc">Doctor speaks</button>
-        <label class="autosw"><input type="checkbox" id="iauto" checked /> hand the mic over after each turn</label>
+        <label class="autosw"><input type="checkbox" id="iauto" /> hand the mic over after each turn</label>
       </div>
       <div class="cbar" id="cbar">
         <button class="mic" id="mic4" title="Start the visit — the mic stays open">START</button>
