@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doctor Globe · pitch</title>
+<style>
+  :root{--bg:#0b0d10;--fg:#f2f4f7;--muted:#97a1ad;--raise:#151a20;--line:#232a33}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 18px 48px}
+  .wrap{width:100%;max-width:980px}
+  .nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:inline-flex;align-items:center;gap:8px;background:var(--raise);border:1px solid var(--line);
+         border-radius:999px;padding:7px 14px;font-weight:600;letter-spacing:.2px}
+  a.btn{color:var(--fg);text-decoration:none;background:var(--raise);border:1px solid var(--line);
+        border-radius:999px;padding:7px 13px;font-size:13px}
+  a.btn:hover{border-color:#3a4552}
+  h1{font-size:26px;margin:6px 0 4px}
+  p.lead{color:var(--muted);margin:0 0 18px}
+  video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav">
+    <span class="brand">Doctor Globe · डॉक्टर ग्लोब</span>
+    <a class="btn" href="../">App</a>
+    <a class="btn" href="../deck/">Deck &#8599;</a>
+    <a class="btn" href="../clinic">Clinic</a>
+  </div>
+  <h1>The pitch</h1>
+  <p class="lead">Four things, one pipeline, in Kannada, Hindi, Telugu, Tamil or English.</p>
+  <video controls playsinline preload="metadata" src="doctor-globe-pitch.mp4"></video>
+</div>
+</body>
+</html>

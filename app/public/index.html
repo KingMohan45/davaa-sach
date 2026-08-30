@@ -20,6 +20,8 @@ body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--fg);background
   background-size:26px 26px;-webkit-font-smoothing:antialiased;min-height:100vh}
 #bg3d{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.8}
 .shell{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:22px 20px 70px}
+.brandrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+.navlink{text-decoration:none;display:inline-block}
 .brand{display:inline-flex;align-items:center;gap:10px;background:var(--raise);color:var(--fg);
   font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
   padding:8px 14px;border-radius:40px;box-shadow:4px 4px 0 var(--sig)}
@@ -293,11 +295,20 @@ audio{width:100%;margin-top:14px;border-radius:10px}
 .sessline span{font-family:"Space Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.12em;
   text-transform:uppercase;color:var(--mut)}
 </style>
+<script>
+// The app is served both at the domain root and mounted under /doctorglobe. Every API call below
+// is an absolute path, so it needs the mount point prepended when there is one.
+window.APP_BASE = (location.pathname.match(/^(\/[^/]+)(?:\/|$)/) || ["", ""])[1] === "/doctorglobe" ? "/doctorglobe" : "";
+</script>
 </head>
 <body>
 <canvas id="bg3d"></canvas>
 <div class="shell">
-  <div class="brand">Doctor Globe · डॉक्टर ग्लोब</div>
+  <div class="brandrow">
+    <div class="brand">Doctor Globe · डॉक्टर ग्लोब</div>
+    <a class="ex navlink" href="deck/">Deck &#8599;</a>
+    <a class="ex navlink" href="pitch">Pitch video &#8599;</a>
+  </div>
   <h1>Is your <em>medicine</em> actually safe?</h1>
   <div class="scribble">ask out loud, in your own language</div>
   <p class="lead">India's regulator publishes its Not-of-Standard-Quality list as English PDFs. A drug restricted in Europe can still sit on the shelf here. And in any Indian hospital, the patient and the doctor often do not share a language. Four things, one pipeline, in Kannada, Hindi, Telugu, Tamil or English.</p>
@@ -432,7 +443,7 @@ audio{width:100%;margin-top:14px;border-radius:10px}
           <span class="chn doc"><b>Doctor</b><select id="ito" class="pill mini"></select></span>
         </div>
         <div class="chtools">
-          <a class="ex" href="/clinic" style="text-decoration:none;display:inline-block">Open full clinic &#8599;</a>
+          <a class="ex" href="clinic" style="text-decoration:none;display:inline-block">Open full clinic &#8599;</a>
           <span class="turncount" id="icount">no turns yet</span>
           <button class="ex" id="i-copy">Copy transcript</button>
           <button class="ex" id="i-clear">Clear</button>
@@ -606,7 +617,7 @@ async function check() {
   $("pt1").textContent = "live pipeline — querying regulator data";
   const tm = setTimeout(() => mark("c-reason", "run"), 2500);
   try {
-    const r = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ drug, lang }) });
+    const r = await fetch(APP_BASE + "/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ drug, lang }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
     clearTimeout(tm);
     const deg = d.degraded || [];
@@ -640,7 +651,7 @@ async function review() {
   $("pt2").textContent = "live pipeline — WHO alert index, bans by country, FDA labels";
   const tm = setTimeout(() => mark("x-reason", "run"), 3000);
   try {
-    const r = await fetch("/api/prescription", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
+    const r = await fetch(APP_BASE + "/api/prescription", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
     clearTimeout(tm);
     const deg = d.degraded || [];
@@ -680,7 +691,7 @@ async function symptoms() {
   $("pt3").textContent = "live pipeline — restating symptoms clinically";
   const tm = setTimeout(() => mark("y-ev", "run"), 2500);
   try {
-    const r = await fetch("/api/symptoms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
+    const r = await fetch(APP_BASE + "/api/symptoms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
     clearTimeout(tm);
     mark("y-map", "done"); mark("y-ev", (d.degraded || []).includes("who") ? "fail" : "done");
@@ -767,7 +778,7 @@ for (const m of MICS) {
         let bin = "";
         for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
         try {
-          const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioBase64: btoa(bin), mime }) });
+          const r = await fetch(APP_BASE + "/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioBase64: btoa(bin), mime }) });
           const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
           if (m.console) { sendTurn(d.transcript || d.drugLatin || "", d.detectedLang || null); return; }
           mark(m.step, "done");
@@ -991,7 +1002,7 @@ function interpret(spokenText, who) {
   // Streamed: each stage paints the instant it exists, instead of the whole turn appearing at the
   // end. The translation lands roughly half way through the turn, so nobody waits on the voice.
   const qs = new URLSearchParams({ text, from, to, speaker: turn.speaker });
-  const es = new EventSource("/api/interpret/stream?" + qs.toString());
+  const es = new EventSource(APP_BASE + "/api/interpret/stream?" + qs.toString());
   let closed = false;
   const finish = () => { if (closed) return; closed = true; es.close(); iOpen--; $("int").dataset.fromVoice = "0"; saveI(); };
 
@@ -1072,7 +1083,7 @@ async function sttBlob(blob, fast) {
   if (buf.length < 2200) return null;
   let bin = "";
   for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
-  const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" },
+  const r = await fetch(APP_BASE + "/api/stt", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ audioBase64: btoa(bin), mime: blob.type || "audio/webm", fast: Boolean(fast) }) });
   const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
   return d;
@@ -1277,7 +1288,7 @@ async function sendTurn(spokenText, detectedLang) {
   paintTurn(local);
   if (conSpeaker === "patient") $("note").innerHTML = '<div class="thinking">re-reading the whole conversation...</div>';
   try {
-    const r = await fetch("/api/consult", { method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await fetch(APP_BASE + "/api/consult", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, fromLang: from, toLang: to, speaker: conSpeaker, transcript: turns }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
     local.translated = d.translated;

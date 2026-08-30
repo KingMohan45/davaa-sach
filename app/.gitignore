@@ -2,3 +2,6 @@ node_modules/
 .env
 cache/*.json
 *.wav
+.worker/
+.wrangler/
+.env.bak-*

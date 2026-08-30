@@ -153,6 +153,11 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
 @media(max-width:1100px){main{grid-template-columns:210px 1fr}.rail{display:none}}
 @media(max-width:760px){main{grid-template-columns:1fr}aside{display:none}.msg{max-width:92%}}
 </style>
+<script>
+// The app is served both at the domain root and mounted under /doctorglobe. Every API call below
+// is an absolute path, so it needs the mount point prepended when there is one.
+window.APP_BASE = (location.pathname.match(/^(\/[^/]+)(?:\/|$)/) || ["", ""])[1] === "/doctorglobe" ? "/doctorglobe" : "";
+</script>
 </head>
 <body>
 <header>
@@ -163,7 +168,9 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
     <span class="tag doc">Doctor</span><select id="ito" class="pill"></select>
     <button class="ghost" id="i-copy">Copy visit</button>
     <button class="ghost" id="i-del">Delete visit</button>
-    <a class="ghost" href="/" style="text-decoration:none;display:inline-block">All tools</a>
+    <a class="ghost" href="./" style="text-decoration:none;display:inline-block">All tools</a>
+    <a class="ghost" href="deck/" style="text-decoration:none;display:inline-block">Deck &#8599;</a>
+    <a class="ghost" href="pitch" style="text-decoration:none;display:inline-block">Pitch video &#8599;</a>
   </div>
 </header>
 
@@ -209,6 +216,6 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
   </div>
 </main>
 
-<script src="/clinic.js"></script>
+<script src="clinic.js"></script>
 </body>
 </html>

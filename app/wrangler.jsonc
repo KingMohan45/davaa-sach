@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doctorglobe",
+  "main": ".worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "k45.to/doctorglobe*", "zone_name": "k45.to" }
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "kv_namespaces": [
+    { "binding": "WARM_KV", "id": "1e78d034a25e44e39a1f3e609db994ce" }
+  ],
+  "vars": {
+    "BASE_PATH": "/doctorglobe"
+  },
+  "observability": { "enabled": true }
+}

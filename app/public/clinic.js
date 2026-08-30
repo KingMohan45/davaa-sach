@@ -335,7 +335,7 @@ function interpret(spokenText, who, existing) {
   if (!existing && $("iauto").checked) setSpeaker(sp === "patient" ? "doctor" : "patient");
 
   const qs = new URLSearchParams({ text, from, to, speaker: sp });
-  const es = new EventSource("/api/interpret/stream?" + qs.toString());
+  const es = new EventSource(APP_BASE + "/api/interpret/stream?" + qs.toString());
   let closed = false;
   // A visit can be switched while a turn is in flight; only touch the DOM if it is still on screen.
   const showing = () => store.currentId === visitId;
@@ -407,7 +407,7 @@ async function sttBlob(blob, fast) {
   if (buf.length < 2200) return null;
   let bin = "";
   for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
-  const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" },
+  const r = await fetch(APP_BASE + "/api/stt", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ audioBase64: btoa(bin), mime: blob.type || "audio/webm", fast: Boolean(fast) }) });
   const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
   return d;
