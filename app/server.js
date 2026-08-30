@@ -149,9 +149,20 @@ function whoLinesFor(md, drug) {
 }
 
 // ---------- Sarvam ----------
+const AUDIO_EXT = { webm: "webm", mp4: "mp4", "x-m4a": "m4a", m4a: "m4a", mpeg: "mp3", mp3: "mp3",
+  ogg: "ogg", opus: "opus", wav: "wav", "x-wav": "wav", wave: "wav", aac: "aac", flac: "flac", amr: "amr" };
+function audioExt(mime) {
+  const sub = String(mime || "").split(";")[0].split("/")[1] || "webm";
+  return AUDIO_EXT[sub.toLowerCase()] || "webm";
+}
+
 async function sarvamSTT(audioBuffer, mime) {
+  if (!audioBuffer || audioBuffer.length < 2000) {
+    throw new Error("recording too short - hold the mic button and speak for a second or two");
+  }
   const fd = new FormData();
-  fd.append("file", new Blob([audioBuffer], { type: mime }), "clip.webm");
+  const clean = String(mime || "audio/webm").split(";")[0]; // Sarvam wants a bare type, not ;codecs=opus
+  fd.append("file", new Blob([audioBuffer], { type: clean }), `clip.${audioExt(clean)}`);
   fd.append("model", "saaras:v3");
   fd.append("language_code", "unknown"); // auto-detect
   fd.append("mode", "codemix"); // Hinglish/Kanglish etc — "Dolo 650 safe hai kya" transcribes clean

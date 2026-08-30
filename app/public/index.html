@@ -631,19 +631,27 @@ for (const m of MICS) {
       micStarting = true;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunks = [];
-      rec = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const CANDIDATES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus", "audio/ogg"];
+      const picked = CANDIDATES.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+      rec = picked ? new MediaRecorder(stream, { mimeType: picked }) : new MediaRecorder(stream);
       rec.ondataavailable = (e) => chunks.push(e.data);
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         $(m.btn).classList.remove("rec");
         if (waveStop) { waveStop(); waveStop = null; }
         if (!m.console) { pipe(m.pipeId, m.steps, true); mark(m.step, "run"); }
-        const blob = new Blob(chunks, { type: "audio/webm" });
+        const mime = (rec && rec.mimeType) || (chunks[0] && chunks[0].type) || "audio/webm";
+        const blob = new Blob(chunks, { type: mime });
         const buf = new Uint8Array(await blob.arrayBuffer());
+        if (buf.length < 2000) { // a tap instead of a hold produces a header-only clip
+          if (!m.console) mark(m.step, "fail");
+          $(m.err).textContent = "That recording was too short. Tap MIC, speak for a second or two, then tap again to stop.";
+          return;
+        }
         let bin = "";
         for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
         try {
-          const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioBase64: btoa(bin), mime: "audio/webm" }) });
+          const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioBase64: btoa(bin), mime }) });
           const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
           if (m.console) { sendTurn(d.transcript || d.drugLatin || "", d.detectedLang || null); return; }
           mark(m.step, "done");
