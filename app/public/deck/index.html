@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Davaa Sach — speak the medicine, hear the truth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Anek+Devanagari:wght@400;600;800&family=Anek+Kannada:wght@400;600;800&family=Anek+Telugu:wght@400;600;800&family=Anek+Tamil:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ============================================================================
+   APOTHECARY — deliberately NOT the neo-brutalist deep-green house theme.
+   That deck (and the Davaa Sach app itself) is 3px borders, hard offset
+   shadows, Archivo Black on a dot grid. Reusing it here would make the deck
+   look like a screenshot of the product. So:
+
+     brutalism            ->  apothecary
+     3px borders          ->  1px hairlines + soft glow
+     hard offset shadow   ->  lifted shadow + inner light
+     Archivo Black        ->  Instrument Serif (editorial), Inter for body
+     dot grid             ->  BLISTER-PACK pill pockets
+     one chartreuse sig   ->  a THREE-state signal (red/green/amber) which IS
+                              the product's own verdict vocabulary
+
+   Rule: red means FLAGGED, green means CLEAR, amber means UNCHECKED. Nothing
+   decorative is ever allowed to use them, or the verdict stops meaning anything.
+   Foil silver is the only other accent, and it only ever appears as a moving
+   highlight (a blister strip catching the light), never as a fill.
+   ========================================================================== */
+:root{
+  --ink:#08080A; --ink2:#0D0D11; --surf:#131318; --raise:#1B1B22; --deep:#040405;
+  --line:rgba(245,241,232,.12); --line2:rgba(245,241,232,.22);
+  --fg:#F5F1E8; --mut:#948F84; --dim:#6A665E;
+  --bone:#F5F1E8;
+  --red:#FF2D3B; --grn:#00E27A; --amb:#FFB020;
+  --redd:#3A0A0F; --grnd:#052E1D; --ambd:#33230A;
+  --rad:14px; --radl:22px;
+  --sh:0 18px 46px rgba(0,0,0,.62), inset 0 1px 0 rgba(245,241,232,.055);
+  --shl:0 30px 74px rgba(0,0,0,.72), inset 0 1px 0 rgba(245,241,232,.09);
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Inter",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --dev:"Anek Devanagari",var(--sans); --kan:"Anek Kannada",var(--sans);
+  --tel:"Anek Telugu",var(--sans); --tam:"Anek Tamil",var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory}
+body{
+  font-family:var(--sans);color:var(--fg);background:var(--ink);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  /* the blister pack: two offset rows of pill pockets */
+  background-image:
+    radial-gradient(ellipse 19px 31px at 50% 50%, rgba(245,241,232,.036) 0 60%, rgba(245,241,232,.012) 62%, transparent 66%),
+    radial-gradient(ellipse 19px 31px at 50% 50%, rgba(245,241,232,.036) 0 60%, rgba(245,241,232,.012) 62%, transparent 66%);
+  background-size:76px 104px,76px 104px;
+  background-position:0 0,38px 52px;
+}
+::selection{background:var(--grn);color:#04120B}
+
+/* ---------------- fixed chrome ---------------- */
+.brand{position:fixed;top:16px;left:20px;z-index:70;display:flex;align-items:center;gap:9px;
+  font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--mut)}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--grn);box-shadow:0 0 14px var(--grn);
+  display:block;font-style:normal;animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.counter{position:fixed;top:14px;right:20px;z-index:70;font-family:var(--mono);font-size:12px;font-weight:700;
+  color:var(--mut);background:rgba(19,19,24,.78);border:1px solid var(--line);border-radius:40px;
+  padding:7px 13px;backdrop-filter:blur(9px)}
+.counter b{color:var(--fg)}
+.hint{position:fixed;bottom:26px;left:20px;z-index:71;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:.03em}
+.hint kbd{font-family:var(--mono);font-size:10px;background:var(--raise);border:1px solid var(--line);
+  border-radius:5px;padding:1px 5px;color:var(--mut)}
+.progress{position:fixed;left:0;right:0;bottom:0;height:3px;z-index:75;background:rgba(245,241,232,.07)}
+.progress .fill{height:100%;width:0;background:linear-gradient(90deg,var(--grn),#8CF5C4);
+  box-shadow:0 0 16px rgba(0,226,122,.7);transition:width .14s linear}
+.dots{position:fixed;right:15px;top:50%;transform:translateY(-50%);z-index:70;display:flex;flex-direction:column;gap:8px}
+.dots button{width:7px;height:7px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:rgba(245,241,232,.24);transition:.22s cubic-bezier(.2,.9,.3,1)}
+.dots button.on{background:var(--grn);height:20px;border-radius:6px;box-shadow:0 0 12px rgba(0,226,122,.75)}
+#pdfbtn{position:fixed;bottom:22px;right:20px;z-index:71;cursor:pointer;font:600 12px/1 var(--sans);
+  color:var(--mut);background:rgba(19,19,24,.85);border:1px solid var(--line);border-radius:40px;padding:9px 15px;
+  backdrop-filter:blur(9px);transition:.18s}
+#pdfbtn:hover{color:var(--fg);border-color:var(--line2)}
+:focus-visible{outline:2px solid var(--grn);outline-offset:3px}
+@media (max-width:860px){.dots,.hint{display:none}}
+body.exporting .dots,body.exporting .hint,body.exporting .progress,body.exporting #pdfbtn,
+body.exporting .counter,body.exporting .replay{display:none!important}
+
+/* ---------------- slide frame ---------------- */
+.slide{min-height:100vh;scroll-snap-align:start;display:flex;align-items:center;justify-content:center;
+  padding:88px 30px 64px;position:relative;overflow:hidden}
+.wrap{width:100%;max-width:1180px;position:relative;z-index:3}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin-bottom:20px}
+.eyebrow:before{content:"";width:26px;height:1px;background:var(--line2)}
+h1{font-family:var(--serif);font-weight:400;line-height:.92;letter-spacing:-.022em;
+  font-size:clamp(52px,8.6vw,124px)}
+h2{font-family:var(--serif);font-weight:400;line-height:.96;letter-spacing:-.02em;
+  font-size:clamp(34px,5.4vw,72px);margin-bottom:14px}
+h2 em,h1 em{font-style:italic;color:var(--grn)}
+h2 s{text-decoration:line-through;text-decoration-thickness:3px;text-decoration-color:var(--red);opacity:.55}
+h3{font-family:var(--sans);font-size:18px;font-weight:700;letter-spacing:-.005em;line-height:1.28}
+p.lead{font-size:clamp(16px,1.75vw,21px);font-weight:400;line-height:1.5;max-width:60ch;margin-top:14px;color:#CFCABF}
+p.lead b{color:var(--fg);font-weight:600}
+.mut{color:var(--mut)} .dimt{color:var(--dim)}
+.dev{font-family:var(--dev)} .kan{font-family:var(--kan)}
+.tel{font-family:var(--tel)} .tam{font-family:var(--tam)}
+
+/* the foil sweep: a blister strip catching the light. Base stops are opaque
+   bone, so if the animation never runs the text is still fully legible. */
+@keyframes foil{0%{background-position:180% 0}100%{background-position:-80% 0}}
+.foil{background-image:linear-gradient(100deg,#F5F1E8 0 34%,#FFFFFF 43%,#B9B5AB 49%,#FFFFFF 55%,#F5F1E8 64% 100%);
+  background-size:280% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:foil 7s cubic-bezier(.5,0,.5,1) 1s infinite}
+
+/* ---------------- kit ---------------- */
+.card{background:linear-gradient(180deg,var(--surf),var(--ink2));border:1px solid var(--line);
+  border-radius:var(--rad);padding:22px;box-shadow:var(--sh);position:relative;overflow:hidden;
+  transition:transform .3s cubic-bezier(.2,.9,.3,1),box-shadow .3s,border-color .3s}
+.card:hover{transform:translateY(-5px);box-shadow:var(--shl);border-color:var(--line2)}
+.card p{font-size:14.5px;line-height:1.52;color:#BDB8AE;margin-top:8px}
+.card p b{color:var(--fg);font-weight:600}
+.tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+@media (max-width:960px){.g3,.g4,.g5{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:680px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+.ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:16px;
+  background:var(--raise);border:1px solid var(--line);margin-bottom:12px}
+.chip{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.05em;
+  background:var(--raise);border:1px solid var(--line);border-radius:30px;padding:4px 10px;color:var(--mut);white-space:nowrap}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pillrow{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.pill{display:inline-flex;align-items:center;gap:9px;background:var(--surf);border:1px solid var(--line);
+  border-radius:40px;padding:9px 17px;font-size:13.5px;font-weight:600;box-shadow:var(--sh)}
+ul.tk{list-style:none;margin-top:12px}
+ul.tk li{font-size:14.5px;line-height:1.5;color:#BDB8AE;padding-left:22px;position:relative;margin:9px 0}
+ul.tk li:before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:2px;background:var(--grn)}
+ul.tk li b{color:var(--fg);font-weight:600}
+ul.x li:before{background:var(--red)} ul.a li:before{background:var(--amb)}
+code{font-family:var(--mono);font-size:12px;background:var(--raise);border:1px solid var(--line);
+  border-radius:5px;padding:1.5px 6px;color:#D8D3C8}
+pre.code{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--deep);
+  border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;color:#B4AFA5;margin-top:16px}
+pre.code b{color:var(--grn);font-weight:700} pre.code u{color:var(--amb);text-decoration:none}
+pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-decoration:none;font-weight:700}
+.stat{background:linear-gradient(180deg,var(--surf),var(--ink2));border:1px solid var(--line);
+  border-radius:var(--rad);padding:22px 18px;text-align:center;box-shadow:var(--sh)}
+.stat .num{font-family:var(--serif);font-size:clamp(38px,5.2vw,66px);line-height:1;letter-spacing:-.03em}
+.stat .cap{font-size:11.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--mut);margin-top:10px}
+.sig-r{color:var(--red)} .sig-g{color:var(--grn)} .sig-a{color:var(--amb)}
+.hair{height:1px;background:linear-gradient(90deg,var(--line2),transparent);margin:26px 0}
+
+/* the one inverted surface: a pharmacy label, bone paper on a black deck */
+.label{background:var(--bone);color:#16150F;border:1px solid #CFC9BB;border-radius:var(--rad);padding:22px;
+  box-shadow:0 22px 60px rgba(0,0,0,.7)}
+.label h3{color:#16150F} .label p{color:#4A463C} .label .tag{color:#8A8477}
+.label code{background:rgba(0,0,0,.07);border-color:rgba(0,0,0,.12);color:#16150F}
+
+/* ---------------- stagger reveal ---------------- */
+@keyframes riseIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.slide .rv{opacity:0}
+.slide.seen .rv{animation:riseIn .62s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(var(--i,0)*.075s)}
+
+/* ---------------- s0 · holding screen ---------------- */
+#s0{background:var(--deep)}
+#s0 .glow{position:absolute;inset:0;z-index:0;
+  background:radial-gradient(60% 50% at 50% 46%,rgba(0,226,122,.10),transparent 70%)}
+.askrot{height:clamp(46px,7vw,86px);position:relative;margin-top:8px}
+.askrot span{position:absolute;left:0;top:0;opacity:0;white-space:nowrap;
+  font-size:clamp(26px,4.4vw,54px);font-weight:600;color:var(--fg)}
+@keyframes rot{0%,3%{opacity:0;transform:translateY(14px)}8%,20%{opacity:1;transform:none}
+  26%,100%{opacity:0;transform:translateY(-12px)}}
+.askrot span{animation:rot 15s cubic-bezier(.2,.9,.3,1) infinite;animation-delay:calc(var(--k)*3s)}
+
+/* ---------------- waveform ---------------- */
+.wave{display:flex;align-items:center;gap:3px;height:64px}
+.wave i{display:block;width:3px;border-radius:3px;background:var(--grn);opacity:.85;
+  height:8px;box-shadow:0 0 10px rgba(0,226,122,.55);
+  animation:wv 1.15s ease-in-out infinite alternate;animation-delay:calc(var(--k)*-.055s)}
+@keyframes wv{from{height:6px;opacity:.35}to{height:var(--h,30px);opacity:1}}
+.wave.idle i{animation-duration:2.6s;opacity:.4}
+
+/* ---------------- s1 · cold open ---------------- */
+.cine{background:var(--deep);background-image:none;padding:0}
+.cstage{position:relative;width:100%;max-width:1180px;height:min(80vh,680px);
+  display:flex;flex-direction:column;justify-content:center;padding:0 clamp(26px,5.5vw,74px)}
+.replay{position:absolute;bottom:22px;right:26px;z-index:9;cursor:pointer;font:600 11.5px/1 var(--sans);
+  color:var(--mut);background:rgba(19,19,24,.9);border:1px solid var(--line);border-radius:40px;padding:9px 15px}
+.replay:hover{color:var(--fg);border-color:var(--line2)}
+.act{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:0 clamp(26px,5.5vw,74px)}
+.act2{opacity:0}
+.utter{font-family:var(--dev);font-size:clamp(28px,4.6vw,58px);font-weight:600;line-height:1.28;
+  color:var(--fg);min-height:1.3em}
+.utter .cur{color:var(--grn);animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.xtract{margin-top:26px;display:flex;align-items:center;gap:16px;opacity:0}
+.xarrow{font-family:var(--mono);color:var(--dim);font-size:20px}
+.latin{font-family:var(--mono);font-size:clamp(20px,2.8vw,34px);font-weight:700;color:var(--grn);
+  border:1px solid rgba(0,226,122,.4);border-radius:10px;padding:8px 18px;background:rgba(0,226,122,.07);
+  box-shadow:0 0 40px rgba(0,226,122,.22)}
+.subline{margin-top:22px;font-family:var(--mono);font-size:13px;color:var(--dim);opacity:0}
+.flash{position:absolute;inset:0;background:var(--bone);opacity:0;z-index:8;pointer-events:none}
+.title{font-family:var(--serif);font-size:clamp(58px,11.5vw,168px);line-height:.88;letter-spacing:-.03em;opacity:0}
+.titlesub{font-family:var(--dev);font-size:clamp(22px,3.4vw,44px);font-weight:600;color:var(--grn);opacity:0;margin-top:6px}
+.tagline{font-size:clamp(16px,1.9vw,24px);font-weight:500;color:#CFCABF;opacity:0;margin-top:18px;max-width:52ch}
+.credit{position:absolute;left:clamp(26px,5.5vw,74px);bottom:26px;font-family:var(--mono);font-size:10.5px;
+  color:var(--dim);opacity:0;letter-spacing:.06em}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes actOut{from{opacity:1}to{opacity:0}}
+@keyframes fl{0%{opacity:0}8%{opacity:.92}100%{opacity:0}}
+@keyframes slamIn{0%{opacity:0;transform:scale(2.9);filter:blur(9px)}
+  62%{opacity:1;transform:scale(.965);filter:blur(0)}82%{transform:scale(1.018)}100%{opacity:1;transform:scale(1)}}
+.cine.playing .xtract{animation:fadeUp .5s cubic-bezier(.2,1.4,.35,1) 4.5s both}
+.cine.playing .subline{animation:fadeIn .5s linear 5.4s both}
+.cine.playing .act1{animation:actOut .45s ease-in 6.6s both}
+.cine.playing .flash{animation:fl .55s ease-out 7.0s both}
+.cine.playing .act2{animation:fadeIn .01s linear 7.06s both}
+.cine.playing .title{animation:slamIn .72s cubic-bezier(.16,1.3,.3,1) 7.1s both}
+.cine.playing .titlesub{animation:fadeUp .5s cubic-bezier(.2,.9,.3,1) 7.62s both}
+.cine.playing .tagline{animation:fadeUp .55s cubic-bezier(.2,.9,.3,1) 7.9s both}
+.cine.playing .credit{animation:fadeIn .5s linear 8.5s both}
+
+/* ---------------- blister wall ---------------- */
+.blister{display:grid;grid-template-columns:repeat(20,1fr);gap:7px;margin-top:8px}
+@media (max-width:900px){.blister{grid-template-columns:repeat(12,1fr)}}
+.pk{aspect-ratio:.66;border-radius:40% 40% 44% 44%/32% 32% 40% 40%;
+  background:linear-gradient(160deg,rgba(245,241,232,.16),rgba(245,241,232,.05));
+  border:1px solid rgba(245,241,232,.10);opacity:0;transform:scale(.5)}
+.slide.seen .pk{animation:pkIn .34s cubic-bezier(.2,1.4,.35,1) both;animation-delay:calc(var(--k)*.008s)}
+@keyframes pkIn{to{opacity:1;transform:none}}
+.slide.seen .pk.bad{animation:pkIn .34s cubic-bezier(.2,1.4,.35,1) both,
+  pkBad .5s cubic-bezier(.2,1.4,.35,1) both;
+  animation-delay:calc(var(--k)*.008s),calc(1.9s + var(--j)*.11s)}
+@keyframes pkBad{to{background:linear-gradient(160deg,#FF2D3B,#8E0C16);
+  border-color:#FF6B75;box-shadow:0 0 22px rgba(255,45,59,.75);transform:scale(1.16)}}
+
+/* ---------------- verdict cards + stamp ---------------- */
+.vcard{position:relative;border-radius:var(--radl);padding:26px;overflow:hidden;
+  border:1px solid var(--line);background:linear-gradient(180deg,var(--surf),var(--ink2));box-shadow:var(--sh)}
+.vcard.red{border-color:rgba(255,45,59,.42);background:linear-gradient(180deg,var(--redd),#150407)}
+.vcard.grn{border-color:rgba(0,226,122,.38);background:linear-gradient(180deg,var(--grnd),#03130C)}
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.vdrug{font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:.02em}
+.vbadge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  border-radius:30px;padding:5px 13px}
+.vcard.red .vbadge{background:var(--red);color:#200306}
+.vcard.grn .vbadge{background:var(--grn);color:#04120B}
+.vreason{font-size:14.5px;line-height:1.55;color:#C8C3B8;margin-top:16px}
+.vloc{font-family:var(--kan);font-size:17px;margin-top:12px;color:#E4DFD4}
+.stamp{position:absolute;right:16px;bottom:14px;z-index:4;font-family:var(--mono);font-weight:700;
+  font-size:clamp(13px,1.5vw,17px);letter-spacing:.06em;color:var(--red);
+  border:4px double var(--red);border-radius:9px;padding:7px 13px;opacity:0;
+  transform:rotate(-15deg) scale(2.9);text-shadow:0 0 14px rgba(255,45,59,.5)}
+.slide.seen .stamp{animation:stampSlam .62s cubic-bezier(.16,1.5,.3,1) 1.1s both}
+@keyframes stampSlam{0%{opacity:0;transform:rotate(-30deg) scale(3.1);filter:blur(8px)}
+  58%{opacity:1;transform:rotate(-15deg) scale(.92);filter:blur(0)}
+  74%{transform:rotate(-15deg) scale(1.07)}100%{opacity:.94;transform:rotate(-15deg) scale(1)}}
+.slide.seen .vcard.red{animation:shk .34s cubic-bezier(.36,.07,.19,.97) 1.62s both}
+@keyframes shk{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}100%{transform:none}}
+.seal{position:absolute;right:18px;bottom:16px;width:74px;height:74px;opacity:0}
+.slide.seen .seal{animation:fadeIn .3s linear 1.15s both}
+.seal circle,.seal path{stroke:var(--grn);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.seal circle{stroke-dasharray:210;stroke-dashoffset:210}
+.seal path{stroke-dasharray:44;stroke-dashoffset:44}
+.slide.seen .seal circle{animation:draw .72s cubic-bezier(.4,0,.2,1) 1.2s both}
+.slide.seen .seal path{animation:draw .34s cubic-bezier(.4,0,.2,1) 1.82s both}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---------------- pipeline ---------------- */
+.pipe{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:26px}
+@media (max-width:980px){.pipe{grid-template-columns:repeat(3,1fr)}}
+.pnode{background:linear-gradient(180deg,var(--surf),var(--ink2));border:1px solid var(--line);
+  border-radius:12px;padding:15px 13px;text-align:center;position:relative}
+.pnode .pn{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--fg);line-height:1.35}
+.pnode .pw{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-top:9px}
+.pnode .pt{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:6px}
+.pnode.sv .pw{color:var(--grn)} .pnode.ak .pw{color:var(--amb)}
+.slide.seen .pnode{animation:lit 1s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(.5s + var(--k)*.26s)}
+@keyframes lit{0%{opacity:.28;transform:translateY(10px)}
+  38%{opacity:1;transform:none;border-color:var(--line2);box-shadow:0 0 34px rgba(245,241,232,.14)}
+  100%{opacity:1;transform:none;box-shadow:var(--sh)}}
+
+/* ---------------- kill test (remove-the-sponsor) ---------------- */
+.kill{position:relative;overflow:hidden}
+.kill:after{content:"";position:absolute;inset:0;background:var(--deep);opacity:0;transition:opacity .4s}
+.slide.seen .kill{animation:die 4.4s cubic-bezier(.4,0,.2,1) 2.2s infinite both}
+@keyframes die{0%,42%{filter:none;opacity:1}
+  58%,80%{filter:grayscale(1) brightness(.34);opacity:.5}
+  96%,100%{filter:none;opacity:1}}
+.killtag{position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.14em;color:var(--red);opacity:0}
+.slide.seen .killtag{animation:kt 4.4s linear 2.2s infinite both}
+@keyframes kt{0%,44%{opacity:0}58%,80%{opacity:1}94%,100%{opacity:0}}
+
+/* ---------------- misc ---------------- */
+.big{font-family:var(--serif);font-size:clamp(44px,7.4vw,104px);line-height:.94;letter-spacing:-.025em}
+.quote{font-family:var(--serif);font-style:italic;font-size:clamp(24px,3.4vw,44px);line-height:1.24;color:var(--fg)}
+.src{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.src:last-child{border-bottom:0}
+.src .sn{font-family:var(--mono);font-size:12.5px;font-weight:700;flex:0 0 auto;min-width:132px}
+.src .sd{font-size:13px;color:var(--mut);line-height:1.45}
+.two{display:grid;grid-template-columns:1.06fr .94fr;gap:38px;align-items:center}
+@media (max-width:940px){.two{grid-template-columns:1fr;gap:26px}}
+
+/* ---------------- s17 · end credits ----------------
+   Film-credit register: role in small mono caps, name in the display serif.
+   Portraits are square face-crops produced by team/facecrop.swift (Vision
+   face detection), so the framing is measured rather than eyeballed. If a
+   portrait file is missing the card falls back to a monogram -- a broken-image
+   icon on the closing slide of a pitch is not an acceptable failure mode. */
+#s17{background:var(--deep);background-image:none}
+.crew{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:34px}
+@media (max-width:940px){.crew{grid-template-columns:repeat(2,1fr)}}
+.mate{text-align:center}
+.port{position:relative;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,var(--surf),var(--ink2));border:1px solid var(--line);
+  box-shadow:var(--sh);transition:transform .35s cubic-bezier(.2,.9,.3,1),box-shadow .35s,border-color .35s}
+.mate:hover .port{transform:translateY(-6px) scale(1.02);box-shadow:var(--shl);border-color:rgba(0,226,122,.45)}
+.port img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.55) contrast(1.06)}
+.mate:hover .port img{filter:none}
+.port .mono{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);
+  font-size:clamp(34px,4vw,58px);color:var(--mut);letter-spacing:-.02em}
+.port:after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 52%,rgba(4,4,5,.72));}
+/* the foil pass -- one strip of light travelling across the four portraits in turn */
+.port:before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(104deg,transparent 38%,rgba(245,241,232,.28) 47%,rgba(255,255,255,.42) 50%,rgba(245,241,232,.28) 53%,transparent 62%);
+  background-size:260% 100%;background-position:190% 0}
+.slide.seen .port:before{animation:foilpass 5.2s cubic-bezier(.45,0,.55,1) infinite;
+  animation-delay:calc(1.1s + var(--i,0)*.34s)}
+@keyframes foilpass{0%{background-position:190% 0}34%,100%{background-position:-90% 0}}
+.mate .role{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);margin-top:14px}
+.mate .name{font-family:var(--serif);font-size:clamp(19px,2.1vw,27px);line-height:1.15;
+  letter-spacing:-.015em;margin-top:5px}
+/* the roll: a real film-credit crawl, masked top and bottom */
+.roll{height:132px;overflow:hidden;position:relative;margin-top:30px;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent)}
+.roll ul{list-style:none;position:absolute;left:0;right:0;top:0}
+.slide.seen .roll ul{animation:crawl 26s linear infinite}
+@keyframes crawl{from{transform:translateY(132px)}to{transform:translateY(-100%)}}
+.roll li{display:flex;justify-content:center;gap:16px;padding:5px 0;font-size:13.5px}
+.roll li span{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);min-width:190px;text-align:right}
+.roll li b{font-weight:600;color:#C8C3B8;min-width:190px;text-align:left}
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+  .slide .rv,.pk,.stamp,.seal,.act2,.title,.titlesub,.tagline,.xtract,.subline,.credit{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="brand"><i></i>Davaa Sach</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">18</span></div>
+<div class="hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot; <kbd>F</kbd> full screen &middot; <kbd>R</kbd> replay &middot; <kbd>N</kbd> notes</div>
+<div class="progress"><div class="fill" id="fill"></div></div>
+<nav class="dots" id="dots" aria-label="Slides"></nav>
+<button id="pdfbtn">Export PDF</button>
+
+<!-- ============ s0 · holding screen ============ -->
+<section class="slide" id="s0">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="eyebrow">AI Engineer Mixer &middot; 30 Aug 2026 &middot; built at Anakin.io</div>
+    <h1 class="foil">Davaa&nbsp;Sach</h1>
+    <div class="askrot" aria-label="Is this medicine safe?">
+      <span class="dev" style="--k:0">क्या यह दवा सुरक्षित है?</span>
+      <span class="kan" style="--k:1">ಈ ಔಷಧಿ ಸುರಕ್ಷಿತವಾಗಿದೆಯೇ?</span>
+      <span class="tel" style="--k:2">ఈ ఔషధం సురక్షితమేనా?</span>
+      <span class="tam" style="--k:3">இந்த மருந்து பாதுகாப்பானதா?</span>
+      <span style="--k:4">Is this medicine safe?</span>
+    </div>
+    <div class="wave idle" id="w0" style="margin-top:26px"></div>
+    <p class="lead" style="margin-top:26px">Speak a medicine name in Kannada, Hindi, Telugu, Tamil or English. Hear back, in your own language, whether India&rsquo;s drug regulator has flagged it &mdash; this month.</p>
+    <div class="pillrow">
+      <span class="pill"><span class="sig-g">&#9679;</span> server up &middot; both keys live</span>
+      <span class="pill">Sarvam AI &middot; 5 models</span>
+      <span class="pill">Anakin.io &middot; Search &middot; Scraper &middot; Wire</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s1 · cold open ============ -->
+<section class="slide cine" id="s1">
+  <div class="cstage">
+    <div class="flash"></div>
+
+    <div class="act act1">
+      <div class="eyebrow">a real query, in a real room</div>
+      <div class="wave" id="w1" style="margin-bottom:26px"></div>
+      <div class="utter" id="utter"><span class="cur">&#9608;</span></div>
+      <div class="xtract">
+        <span class="tag">saaras:v3 returns native script</span>
+        <span class="xarrow">&rarr;</span>
+        <span class="latin">Dolo 650</span>
+      </div>
+      <div class="subline">sarvam-105b pulls the Latin drug name back out &mdash; without this step, every web search downstream silently searches for nothing</div>
+    </div>
+
+    <div class="act act2">
+      <h1 class="title foil">Davaa Sach</h1>
+      <div class="titlesub dev">दवा सच &middot; <span class="kan">ಔಷಧಿ ಸತ್ಯ</span></div>
+      <p class="tagline">Speak the medicine. Hear the truth. In the language you actually think in.</p>
+      <div class="credit">Sarvam AI &nbsp;&middot;&nbsp; Anakin.io &nbsp;&middot;&nbsp; live CDSCO, WHO and openFDA data &mdash; nothing in a model&rsquo;s weights</div>
+    </div>
+  </div>
+  <button class="replay">&#8635; replay</button>
+</section>
+
+<!-- ============ s2 · the blister wall ============ -->
+<section class="slide" id="s2">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">the problem, as a picture</div>
+    <h2 class="rv" style="--i:1">One of these will hurt you.<br><em>Which one?</em></h2>
+    <div class="blister rv" id="blister" style="--i:2"></div>
+    <p class="lead rv" style="--i:3">You cannot tell by looking. Neither can the pharmacist, and neither can the person paying for it. <b>India&rsquo;s drug regulator can</b> &mdash; CDSCO names substandard and spurious medicines every single month.</p>
+    <div class="pillrow rv" style="--i:4">
+      <span class="pill"><span class="sig-r">&#9632;</span> flagged Not-of-Standard-Quality or spurious</span>
+      <span class="pill"><span class="dimt">&#9633;</span> identical to the eye, the box and the strip</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s3 · the language wall ============ -->
+<section class="slide" id="s3">
+  <div class="wrap two">
+    <div>
+      <div class="eyebrow rv" style="--i:0">why nobody reads it</div>
+      <h2 class="rv" style="--i:1">The warning exists.<br>It is just written <em>in English</em>, as a PDF.</h2>
+      <p class="lead rv" style="--i:2">CDSCO publishes the alert. It is a table of English brand names, batch numbers and manufacturers, behind a government portal, linked from a page most people will never open.</p>
+      <ul class="tk x rv" style="--i:3">
+        <li>India&rsquo;s 2011 Census records <b>under 11%</b> of the country speaking any English at all.</li>
+        <li>The list changes <b>every month</b>, so no static app and no model&rsquo;s training data can hold it.</li>
+        <li>The person who needs it most is <b>standing at a pharmacy counter right now</b>, holding the strip.</li>
+      </ul>
+    </div>
+    <div class="rv" style="--i:4">
+      <div class="label">
+        <div class="tag">cdsco.gov.in &middot; alerts &middot; live</div>
+        <h3 style="margin-top:10px">Drug Alert &mdash; Not of Standard Quality</h3>
+        <p style="font-family:var(--mono);font-size:11.5px;line-height:1.85;margin-top:12px">
+          S.No &nbsp; Name of Drug &nbsp; B.No &nbsp; Mfg. By &nbsp; Reason<br>
+          1 &nbsp; &nbsp; &hellip;&hellip;&hellip;&hellip;&hellip;&hellip; &nbsp; &hellip;&hellip; &nbsp; &hellip;&hellip;&hellip; &nbsp; Assay<br>
+          2 &nbsp; &nbsp; &hellip;&hellip;&hellip;&hellip;&hellip;&hellip; &nbsp; &hellip;&hellip; &nbsp; &hellip;&hellip;&hellip; &nbsp; Dissolution<br>
+          3 &nbsp; &nbsp; &hellip;&hellip;&hellip;&hellip;&hellip;&hellip; &nbsp; &hellip;&hellip; &nbsp; &hellip;&hellip;&hellip; &nbsp; Spurious
+        </p>
+        <div class="hair" style="background:rgba(0,0,0,.12);margin:16px 0"></div>
+        <p style="font-size:13px"><b>This is the whole product thesis.</b> The truth is public, current and free. It is simply not in a form a Kannada speaker can use.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s4 · what it is ============ -->
+<section class="slide" id="s4">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">what we built</div>
+    <h2 class="rv" style="--i:1">A verdict, not a chatbot.</h2>
+    <p class="lead rv" style="--i:2">Ask by voice or by typing. Get back one card: <b class="sig-r">red</b>, <b class="sig-g">green</b> or <b class="sig-a">amber</b> &mdash; with the sources it read, in your language, read aloud.</p>
+    <div class="grid g3 rv" style="--i:3;margin-top:30px">
+      <div class="card">
+        <div class="ico">&#127908;</div>
+        <div class="tag">input</div>
+        <h3 style="margin-top:6px">Code-mixed speech</h3>
+        <p>&ldquo;Dolo 650 safe hai kya?&rdquo; &mdash; an English drug name inside a Hindi question. One language model, one pass, <b>0.947</b> confidence measured live.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#9878;</div>
+        <div class="tag">evidence</div>
+        <h3 style="margin-top:6px">Five live authorities</h3>
+        <p>CDSCO, the WHO falsified-medicine alert index, the openFDA label, openFDA recalls, and Tata 1mg for what it costs today.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128266;</div>
+        <div class="tag">output</div>
+        <h3 style="margin-top:6px">Spoken, in five languages</h3>
+        <p>Kannada, Hindi, Telugu, Tamil, English &mdash; with a speaker chosen per language, not one voice bent to fit them all.</p>
+      </div>
+    </div>
+    <div class="pillrow rv" style="--i:4">
+      <span class="pill"><span class="tag">kn-IN</span> <span class="kan">ಔಷಧಿ</span></span>
+      <span class="pill"><span class="tag">hi-IN</span> <span class="dev">दवा</span></span>
+      <span class="pill"><span class="tag">te-IN</span> <span class="tel">మందు</span></span>
+      <span class="pill"><span class="tag">ta-IN</span> <span class="tam">மருந்து</span></span>
+      <span class="pill"><span class="tag">en-IN</span> Medicine</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s5 · three modes ============ -->
+<section class="slide" id="s5">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">three ways in &mdash; all shipped, all live</div>
+    <h2 class="rv" style="--i:1">One pipeline. <em>Three questions</em> people actually ask.</h2>
+    <div class="grid g3" style="margin-top:28px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">POST /api/check</div>
+        <h3 style="margin-top:8px">&ldquo;Is this medicine safe?&rdquo;</h3>
+        <p>One name in. CDSCO alerts, spurious-drug alerts and the live Tata 1mg price out. <b>Red, green or amber</b> plus the sources it quoted.</p>
+        <div class="row"><span class="chip">CDSCO</span><span class="chip">Wire &middot; 1mg</span><span class="chip">bulbul:v3</span></div>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">POST /api/prescription</div>
+        <h3 style="margin-top:8px">&ldquo;The doctor gave me these four.&rdquo;</h3>
+        <p>Free speech in &mdash; <i>&ldquo;start her on Augmentin 625 and Pan 40&rdquo;</i>. We extract every drug, then per drug: boxed warnings, contraindications, <b>interactions</b>, recalls, CDSCO alerts and international bans.</p>
+        <div class="row"><span class="chip">openFDA label</span><span class="chip">openFDA recalls</span><span class="chip">WHO alerts</span></div>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">POST /api/symptoms</div>
+        <h3 style="margin-top:8px">&ldquo;This is how I feel.&rdquo;</h3>
+        <p>Never prescribes, never gives a dose, never says skip the doctor. It triages urgency and hands you <b>the questions to ask</b> &mdash; and escalates to emergency on real red flags.</p>
+        <div class="row"><span class="chip sig-r" style="border-color:rgba(255,45,59,.4)">emergency</span><span class="chip sig-a" style="border-color:rgba(255,176,32,.4)">see_doctor</span><span class="chip sig-g" style="border-color:rgba(0,226,122,.4)">routine</span></div>
+      </div>
+    </div>
+    <p class="lead rv" style="--i:5;margin-top:26px">All three share one evidence layer and one voice layer. Adding a mode costs a prompt, not a rebuild.</p>
+  </div>
+</section>
+
+<!-- ============ s6 · the two verdicts ============ -->
+<section class="slide" id="s6">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">the proof it discriminates</div>
+    <h2 class="rv" style="--i:1">Anything can say &ldquo;safe&rdquo;.<br>The test is whether it will <em>ever say no</em>.</h2>
+    <div class="grid g2" style="margin-top:28px">
+      <div class="vcard red rv" style="--i:2">
+        <div class="vhead"><span class="vdrug">Telma 40</span><span class="vbadge">flagged</span></div>
+        <p class="vreason">Found live on a CDSCO spurious-drug alert, corroborated by an independent May 2025 quality-surveillance report. <b>Not a seeded example</b> &mdash; a real counterfeit, found at query time.</p>
+        <div class="vloc kan">ಈ ಔಷಧಿಯನ್ನು ತೆಗೆದುಕೊಳ್ಳಬೇಡಿ. ಒಂದು ಔಷಧ ನಿಯಂತ್ರಕ ಇದನ್ನು ಎಚ್ಚರಿಸುತ್ತದೆ.</div>
+        <div class="stamp">DO NOT TAKE</div>
+      </div>
+      <div class="vcard grn rv" style="--i:3">
+        <div class="vhead"><span class="vdrug">Dolo 650</span><span class="vbadge">clear</span></div>
+        <p class="vreason">&ldquo;CDSCO NSQ Alerts page lists <b>9 alerts</b> from Aug 2025 onward; none name Dolo 650.&rdquo; The model must cite what it read and count it &mdash; a verdict with no citation is rejected before it renders.</p>
+        <div class="vloc kan">ಯಾವುದೇ ಪ್ರಸ್ತುತ ಎಚ್ಚರಿಕೆಯು ಈ ಔಷಧಿಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ.</div>
+        <svg class="seal" viewBox="0 0 80 80"><circle cx="40" cy="40" r="33"/><path d="M26 41.5l10.5 10.5L55 30"/></svg>
+      </div>
+    </div>
+    <p class="lead rv" style="--i:4;margin-top:24px">We demo <b>both</b>, in that order. A system that only ever goes green is a rubber stamp with a spinner in front of it.</p>
+  </div>
+</section>
+
+<!-- ============ s7 · demo cue ============ -->
+<section class="slide" id="s7" style="background:var(--deep);background-image:none">
+  <div class="glow" style="position:absolute;inset:0;background:radial-gradient(55% 46% at 50% 50%,rgba(0,226,122,.12),transparent 70%)"></div>
+  <div class="wrap" style="text-align:center">
+    <div class="eyebrow rv" style="--i:0;justify-content:center">switch to the browser</div>
+    <div class="big rv foil" style="--i:1">Live demo</div>
+    <p class="lead rv" style="--i:2;margin:20px auto 0;text-align:center">Watch the pipeline strip along the top. It names the API executing at that moment &mdash; and its final state is read from the server&rsquo;s own <code>degraded[]</code> array, so a leg that fails reports as failed instead of quietly finishing green.</p>
+    <div class="pillrow rv" style="--i:3;justify-content:center">
+      <span class="pill">&#127908; &ldquo;Dolo 650 safe hai kya?&rdquo;</span>
+      <span class="pill"><span class="sig-r">1</span> Telma 40 &rarr; red</span>
+      <span class="pill"><span class="sig-g">2</span> Dolo 650 &rarr; green</span>
+      <span class="pill">&#8635; then the same again, cached</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s8 · architecture ============ -->
+<section class="slide" id="s8">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">architecture &mdash; every hop is a sponsor API or a regulator</div>
+    <h2 class="rv" style="--i:1">Voice in. <em>Evidence</em> in the middle. Voice out.</h2>
+    <div class="pipe">
+      <div class="pnode sv" style="--k:0"><div class="pn">saaras:v3</div><div class="pw">Sarvam</div><div class="pt">codemix STT</div></div>
+      <div class="pnode sv" style="--k:1"><div class="pn">sarvam-105b</div><div class="pw">Sarvam</div><div class="pt">name extract</div></div>
+      <div class="pnode ak" style="--k:2"><div class="pn">Search + Scraper</div><div class="pw">Anakin</div><div class="pt">CDSCO &middot; WHO</div></div>
+      <div class="pnode ak" style="--k:3"><div class="pn">Wire &middot; tmg_search</div><div class="pw">Anakin</div><div class="pt">Tata 1mg price</div></div>
+      <div class="pnode sv" style="--k:4"><div class="pn">sarvam-105b</div><div class="pw">Sarvam</div><div class="pt">strict-JSON verdict</div></div>
+      <div class="pnode sv" style="--k:5"><div class="pn">translate + bulbul:v3</div><div class="pw">Sarvam</div><div class="pt">local text + audio</div></div>
+    </div>
+    <pre class="code rv" style="--i:2">POST /api/check  { drug: "Telma 40", lang: "kn-IN" }
+
+  <i>// evidence legs run in parallel, each with its own failure lane</i>
+  <b>Promise.all</b>([ anakinSearch(cdsco), anakinScrape(alerts), anakinWire(tmg_search) ])
+  <i>// a leg that throws pushes its name onto degraded[] and returns empty --</i>
+  <i>// it never throws away the whole answer, and it never fakes one</i>
+
+  &rarr; { verdict: <s>"flagged"</s>, reason, reasonLocal, priceNote,
+      sources[], audioBase64, <u>degraded[]</u> }</pre>
+    <p class="lead rv" style="--i:3">Keys never leave the server. Every external call is disk-cached by content hash &mdash; which is what makes the second demo instant, and what protects a 300-credit budget in a live room.</p>
+  </div>
+</section>
+
+<!-- ============ s9 · Sarvam ============ -->
+<section class="slide" id="s9">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">sponsor api &middot; 01</div>
+    <h2 class="rv" style="--i:1">Sarvam AI is not the polish.<br>It is the <em>only way in and the only way out</em>.</h2>
+    <div class="grid g4" style="margin-top:26px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">speech &rarr; text</div>
+        <h3 style="margin-top:8px">saaras:v3</h3>
+        <p><code>mode=codemix</code>. A Hindi question wrapped around an English brand name is the normal way Indians speak, and it is exactly the case a monolingual STT drops.</p>
+        <div class="row"><span class="chip">0.947 confidence, live</span></div>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">reasoning</div>
+        <h3 style="margin-top:8px">sarvam-105b</h3>
+        <p>Two jobs. Pull the Latin drug name back out of native script, then turn raw regulator evidence into a strict-JSON verdict that <b>must name its source</b>.</p>
+        <div class="row"><span class="chip">+ 105b-conversations</span></div>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">text &rarr; text</div>
+        <h3 style="margin-top:8px">sarvam-translate:v1</h3>
+        <p>The verdict and the spoken line into kn / hi / te / ta. Translating <b>after</b> the reasoning keeps one set of facts and five renderings of it.</p>
+      </div>
+      <div class="card rv" style="--i:5">
+        <div class="tag">text &rarr; speech</div>
+        <h3 style="margin-top:8px">bulbul:v3</h3>
+        <p>Per-language speakers &mdash; <code>ishita</code> for Kannada and Tamil, <code>priya</code> for Hindi and Telugu. All five pairs verified returning real audio.</p>
+      </div>
+    </div>
+    <div class="grid g2 rv" style="--i:6;margin-top:22px">
+      <div class="card kill" style="border-color:rgba(255,45,59,.3)">
+        <span class="killtag">REMOVED</span>
+        <div class="tag">the kill test</div>
+        <h3 style="margin-top:8px">Take Sarvam out</h3>
+        <p>The user cannot ask, cannot read the answer, and cannot hear it. There is no degraded English mode to fall back to &mdash; <b>English was never the product</b>.</p>
+      </div>
+      <div class="card">
+        <div class="tag">why it matters here</div>
+        <h3 style="margin-top:8px">Every model in this pipeline is Indian</h3>
+        <p>Built under the IndiaAI Mission, for the languages this problem is actually in. That is not a slide &mdash; it is why the code-mixed path works at all.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s10 · Anakin ============ -->
+<section class="slide" id="s10">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">sponsor api &middot; 02</div>
+    <h2 class="rv" style="--i:1">Anakin.io is where the <em>facts</em> come from.</h2>
+    <div class="grid g3" style="margin-top:26px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">3 credits</div>
+        <h3 style="margin-top:8px">Search API</h3>
+        <p>Live lookup for <code>"&lt;drug&gt;" CDSCO NSQ alert</code>. Returns this month&rsquo;s alert pages &mdash; <b>which are in no model&rsquo;s training data</b>, including the one answering.</p>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">1 credit</div>
+        <h3 style="margin-top:8px">URL Scraper</h3>
+        <p>The CDSCO alerts index and the WHO falsified-medicine index, scraped to markdown and handed to the model as regulator-of-record evidence.</p>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">2 credits</div>
+        <h3 style="margin-top:8px">Wire &middot; <code>tmg_search</code></h3>
+        <p>A typed action against <b>Tata 1mg</b>, India&rsquo;s largest online pharmacy. Named parameters in, structured JSON out. No HTML ever reaches the model.</p>
+      </div>
+    </div>
+    <div class="two rv" style="--i:5;margin-top:26px">
+      <div>
+        <h3 style="font-size:22px">Why Wire and not a scraper we wrote ourselves</h3>
+        <ul class="tk" style="margin-top:12px">
+          <li>1mg is a React storefront. A scraper against it is <b>dead on their next deploy</b>, and it dies silently, returning an empty page rather than an error.</li>
+          <li>A typed action has named parameters &mdash; <code>query</code>, <code>city</code>, <code>per_page</code> &mdash; so it survives a redesign we never hear about.</li>
+          <li>No raw HTML near the model means no prompt-injection surface from a page we do not control.</li>
+        </ul>
+        <p class="lead" style="margin-top:16px"><b>Our first catalog request is cdsco.gov.in itself</b> &mdash; turn the regulator into a typed action and this stops being a scrape at all.</p>
+      </div>
+      <div class="card kill" style="border-color:rgba(255,45,59,.3)">
+        <span class="killtag">REMOVED</span>
+        <div class="tag">the kill test</div>
+        <h3 style="margin-top:8px">Take Anakin out</h3>
+        <p>No live regulator data, no WHO index, no price. What is left is a model guessing about drug safety from memory &mdash; which is <b>the single most dangerous version of this product</b>, and the reason we did not build it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s11 · evidence sources ============ -->
+<section class="slide" id="s11">
+  <div class="wrap two">
+    <div>
+      <div class="eyebrow rv" style="--i:0">what the verdict is actually made of</div>
+      <h2 class="rv" style="--i:1">Five authorities.<br>Zero opinions.</h2>
+      <p class="lead rv" style="--i:2">The model is not asked what it knows about a drug. It is handed evidence and asked to summarise it into a verdict, and it is rejected if it does not cite what it read.</p>
+      <div class="card rv" style="--i:3;margin-top:22px;border-color:rgba(255,176,32,.32)">
+        <div class="tag sig-a">the detail we are proudest of</div>
+        <h3 style="margin-top:8px">Absence is evidence, not silence</h3>
+        <p>A drug with <b>no US label at all</b> is not a missing field &mdash; it is a finding, and it is passed to the model as one. <code>noUsLabel: true</code>. Plenty of what circulates in India was never approved anywhere that publishes.</p>
+      </div>
+    </div>
+    <div class="card rv" style="--i:4">
+      <div class="src"><span class="sn sig-r">CDSCO</span><span class="sd">India&rsquo;s regulator. NSQ and spurious-drug alerts, refreshed monthly.</span></div>
+      <div class="src"><span class="sn sig-r">WHO</span><span class="sd">The global falsified &amp; substandard medical product alert index &mdash; one scrape, reused across every drug in a prescription.</span></div>
+      <div class="src"><span class="sn sig-a">openFDA label</span><span class="sd">Boxed warnings, contraindications, drug interactions, approved use.</span></div>
+      <div class="src"><span class="sn sig-a">openFDA recalls</span><span class="sd">Enforcement reports &mdash; product, reason, country, classification.</span></div>
+      <div class="src"><span class="sn sig-g">Tata 1mg</span><span class="sd">What it costs in India today, so &ldquo;is it safe&rdquo; and &ldquo;can I afford it&rdquo; are one answer.</span></div>
+      <div class="hair"></div>
+      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Four of the five are reached through Anakin. All five are read at query time, none is bundled, and every one of them can be clicked from the card.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s12 · speed ============ -->
+<section class="slide" id="s12">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">measured, not estimated</div>
+    <h2 class="rv" style="--i:1">Honest about the cold path.<br><em>Ruthless</em> about the second one.</h2>
+    <div class="grid g4" style="margin-top:28px">
+      <div class="stat rv" style="--i:2"><div class="num" data-to="50" data-suf="s">0</div><div class="cap">cold answer</div></div>
+      <div class="stat rv" style="--i:3"><div class="num sig-g" data-to="0.035" data-dec="3" data-suf="s">0</div><div class="cap">cached answer</div></div>
+      <div class="stat rv" style="--i:4"><div class="num foil" data-to="1400" data-suf="&times;">0</div><div class="cap">the gap</div></div>
+      <div class="stat rv" style="--i:5"><div class="num" data-to="52">0</div><div class="cap">responses on disk</div></div>
+    </div>
+    <p class="lead rv" style="--i:6;margin-top:26px">A cold answer is a scrape, a Wire job and three Sarvam calls, and we will not pretend otherwise on stage. Every one of them is cached by content hash, so the second ask is instant &mdash; and the cache is what keeps a 300-credit free tier alive through a demo, a rehearsal and a room full of judges typing the same drug.</p>
+    <div class="pillrow rv" style="--i:7">
+      <span class="pill">search <b>3</b> credits</span>
+      <span class="pill">scrape <b>1</b></span>
+      <span class="pill">wire <b>2</b></span>
+      <span class="pill"><span class="sig-g">repeat asks cost 0</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s13 · fails safe ============ -->
+<section class="slide" id="s13">
+  <div class="wrap two">
+    <div>
+      <div class="eyebrow rv" style="--i:0">the part that decides whether this is safe to ship</div>
+      <h2 class="rv" style="--i:1">An answer we could not check<br>is <em>never</em> a green one.</h2>
+      <p class="lead rv" style="--i:2">Every evidence leg has its own failure lane. If CDSCO is unreachable, the verdict is forced to <b class="sig-a">amber</b> before it is rendered &mdash; and that response is <b>never written to cache</b>, so a bad minute cannot become a permanent wrong answer.</p>
+      <ul class="tk a rv" style="--i:3">
+        <li>A failed leg pushes its name onto <code>degraded[]</code> and returns empty. It does not take the answer down with it.</li>
+        <li>The UI&rsquo;s final state is read from that array, not from &ldquo;the request finished&rdquo;.</li>
+        <li>A verdict the model could not ground gets rewritten to <b>&ldquo;could not confirm&rdquo;</b>, which is the honest failure and the useless-looking one. We kept it anyway.</li>
+      </ul>
+    </div>
+    <div class="rv" style="--i:4">
+      <div class="vcard" style="border-color:rgba(255,176,32,.4);background:linear-gradient(180deg,var(--ambd),#140D02)">
+        <div class="vhead"><span class="vdrug">Telma 40</span><span class="vbadge" style="background:var(--amb);color:#221602">unchecked</span></div>
+        <p class="vreason">&ldquo;Could not reach the live regulator feed just now. <b>This is not a clean bill of health</b> &mdash; please ask a pharmacist.&rdquo;</p>
+        <div class="hair" style="margin:18px 0"></div>
+        <p style="font-family:var(--mono);font-size:11.5px;color:var(--mut)">degraded: [<span class="sig-r">"alerts"</span>] &nbsp;&middot;&nbsp; cached: <span class="sig-r">false</span></p>
+      </div>
+      <p class="lead" style="font-size:15px;margin-top:16px">A medicine checker that answers &ldquo;probably fine&rdquo; when it is actually blind is worse than one that does not exist, because people will trust it exactly once.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s14 · limits ============ -->
+<section class="slide" id="s14">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">stated before anyone has to ask</div>
+    <h2 class="rv" style="--i:1">What this <s>is not</s></h2>
+    <div class="grid g2" style="margin-top:24px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">scope</div>
+        <h3 style="margin-top:8px">Not medical advice</h3>
+        <p>It is a regulatory-alert lookup and a second reader. The symptoms mode refuses to prescribe or dose, and says so out loud, in the user&rsquo;s language, every single time.</p>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">data</div>
+        <h3 style="margin-top:8px">Alert-level, not batch-level</h3>
+        <p>CDSCO&rsquo;s batch PDFs sit behind <code>form.submit()</code> POST forms. We cite the alerts index and live search hits &mdash; not individual batch numbers. Fixing that is a Wire catalog action, not a scraper.</p>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">model</div>
+        <h3 style="margin-top:8px">The verdict is model-mediated</h3>
+        <p>Which is why it is allowed to answer &ldquo;could not confirm&rdquo;, and does, rather than reaching for &ldquo;safe&rdquo; because that reads better in a demo.</p>
+      </div>
+      <div class="card rv" style="--i:5">
+        <div class="tag">coverage</div>
+        <h3 style="margin-top:8px">openFDA is a US label</h3>
+        <p>Used for pharmacology, not for Indian approval status. Where a drug has no US label we say so and treat it as a signal &mdash; we do not read it as clean.</p>
+      </div>
+    </div>
+    <p class="lead rv" style="--i:6;margin-top:24px">Every one of these is in the submission text too. A demo that hides its edges is a demo that has not been driven near them.</p>
+  </div>
+</section>
+
+<!-- ============ s15 · next ============ -->
+<section class="slide" id="s15">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">what happens after 1:00 pm</div>
+    <h2 class="rv" style="--i:1">The next three things,<br>in the order they matter.</h2>
+    <div class="grid g3" style="margin-top:28px">
+      <div class="card rv" style="--i:2">
+        <div class="ico">&#128241;</div>
+        <div class="tag">reach</div>
+        <h3 style="margin-top:6px">WhatsApp voice notes</h3>
+        <p>The people who need this most will never open a web app. They will send a voice note. Same pipeline, no UI at all &mdash; and the voice note is already the input format we handle.</p>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="ico">&#128247;</div>
+        <div class="tag">precision</div>
+        <h3 style="margin-top:6px">Batch number from a photo</h3>
+        <p>Point a camera at the strip. Sarvam Doc AI reads the batch number, and the verdict goes from &ldquo;this brand&rdquo; to <b>&ldquo;this strip in your hand&rdquo;</b>.</p>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="ico">&#9881;</div>
+        <div class="tag">infrastructure</div>
+        <h3 style="margin-top:6px">CDSCO as a Wire catalog action</h3>
+        <p>The regulator becomes a typed endpoint instead of a page we scrape. That is a request we would file today, and it makes batch-level lookups tractable for everyone, not just us.</p>
+      </div>
+    </div>
+    <p class="lead rv" style="--i:5;margin-top:26px">None of these need a new model or a new architecture. They need the pipeline that already runs, pointed at one more surface.</p>
+  </div>
+</section>
+
+<!-- ============ s16 · close ============ -->
+<section class="slide" id="s16" style="background:var(--deep);background-image:none">
+  <div class="glow" style="position:absolute;inset:0;background:radial-gradient(58% 50% at 50% 48%,rgba(0,226,122,.11),transparent 72%)"></div>
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">one line, if you remember nothing else</div>
+    <p class="quote rv" style="--i:1">Every model in this pipeline is Indian.<br>Every fact in the answer is live, and in <em style="font-style:italic;color:var(--grn)">no model&rsquo;s weights</em>.<br>Remove either sponsor and the product is dead.</p>
+    <div class="hair rv" style="--i:2"></div>
+    <div class="grid g3 rv" style="--i:3">
+      <div><div class="tag">the ask</div><p style="font-size:15px;color:#C8C3B8;line-height:1.55;margin-top:8px">A Wire catalog action for <b>cdsco.gov.in</b> and <b>Tata 1mg</b>. We will build against both the day they exist.</p></div>
+      <div><div class="tag">the code</div><p style="font-size:15px;color:#C8C3B8;line-height:1.55;margin-top:8px"><code>node server.js</code> &rarr; <code>localhost:3000</code>. Three routes, five sources, keys server-side only.</p></div>
+      <div><div class="tag">the point</div><p style="font-size:15px;color:#C8C3B8;line-height:1.55;margin-top:8px">The truth about a medicine is already public. It is just not yet in a language the person holding it can read.</p></div>
+    </div>
+    <h1 class="foil rv" style="--i:4;margin-top:34px;font-size:clamp(46px,8vw,110px)">Davaa Sach</h1>
+    <div class="dev rv" style="--i:5;font-size:clamp(20px,3vw,36px);font-weight:600;color:var(--grn);margin-top:2px">दवा सच &middot; <span class="kan">ಔಷಧಿ ಸತ್ಯ</span></div>
+  </div>
+</section>
+
+<!-- ============ s17 · end credits ============ -->
+<section class="slide" id="s17">
+  <div class="glow" style="position:absolute;inset:0;background:radial-gradient(58% 52% at 50% 42%,rgba(0,226,122,.10),transparent 72%)"></div>
+  <div class="wrap" style="text-align:center">
+    <div class="eyebrow rv" style="--i:0;justify-content:center">end credits</div>
+    <h2 class="foil rv" style="--i:1">Built by four people, in one room.</h2>
+
+    <!-- To change a name or add a role, edit ONLY these four blocks.
+         Portraits: drop the originals in team/src/ and run team/make-team.sh -->
+    <div class="crew">
+      <div class="mate rv" style="--i:2">
+        <div class="port" style="--i:0"><img src="team/ashish.jpg" alt="Ashish Kumar" data-mono="AK"></div>
+        <div class="role">engineer</div><div class="name">Ashish Kumar</div>
+      </div>
+      <div class="mate rv" style="--i:3">
+        <div class="port" style="--i:1"><img src="team/joshua.jpg" alt="Joshua Premkumar" data-mono="JP"></div>
+        <div class="role">engineer</div><div class="name">Joshua Premkumar</div>
+      </div>
+      <div class="mate rv" style="--i:4">
+        <div class="port" style="--i:2"><img src="team/anil.jpg" alt="Anil Dandina" data-mono="AD"></div>
+        <div class="role">engineer</div><div class="name">Anil Dandina</div>
+      </div>
+      <div class="mate rv" style="--i:5">
+        <div class="port" style="--i:3"><img src="team/mohan.jpg" alt="Mohan Kumar R" data-mono="MR"></div>
+        <div class="role">engineer</div><div class="name">Mohan Kumar R</div>
+      </div>
+    </div>
+
+    <div class="roll rv" style="--i:6">
+      <ul>
+        <li><span>speech &amp; language</span><b>Sarvam AI</b></li>
+        <li><span>speech to text</span><b>saaras:v3 &middot; codemix</b></li>
+        <li><span>reasoning</span><b>sarvam-105b</b></li>
+        <li><span>translation</span><b>sarvam-translate:v1</b></li>
+        <li><span>voice</span><b>bulbul:v3 &middot; ishita, priya</b></li>
+        <li><span>live web &amp; data</span><b>Anakin.io</b></li>
+        <li><span>search</span><b>Anakin Search API</b></li>
+        <li><span>pages</span><b>Anakin URL Scraper</b></li>
+        <li><span>typed actions</span><b>Anakin Wire &middot; tmg_search</b></li>
+        <li><span>regulator of record</span><b>CDSCO, Government of India</b></li>
+        <li><span>international alerts</span><b>World Health Organization</b></li>
+        <li><span>pharmacology</span><b>openFDA</b></li>
+        <li><span>pharmacy pricing</span><b>Tata 1mg</b></li>
+        <li><span>venue</span><b>Anakin.io, Bengaluru</b></li>
+        <li><span>occasion</span><b>AI Engineer Mixer &middot; 30 Aug 2026</b></li>
+      </ul>
+    </div>
+
+    <p class="lead rv" style="--i:7;margin:24px auto 0;text-align:center;font-size:16px">
+      Ninety minutes, one pipeline, five live sources. <b>Thank you for watching.</b></p>
+    <h1 class="foil rv" style="--i:8;margin-top:22px;font-size:clamp(40px,7vw,96px)">Davaa Sach</h1>
+  </div>
+</section>
+
+<script>
+/* ===========================================================================
+   Deck engine. Scroll-snap sections + a .seen class that arms every CSS
+   animation, so the whole deck still reads as a document with JS disabled --
+   the reveals just start visible. Nothing here computes layout; it only
+   decides WHEN a section is allowed to animate.
+   ========================================================================= */
+(function(){
+  "use strict";
+  try{ history.scrollRestoration='manual'; }catch(_){}
+  if(!location.hash) scrollTo(0,0);
+
+  var REDUCE=false;
+  try{ REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){}
+
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var dots=document.getElementById('dots');
+  var cur=document.getElementById('cur');
+  var tot=document.getElementById('tot');
+  if(tot) tot.textContent=String(slides.length);
+  var idx=0, btns=[];
+
+  slides.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.type='button'; b.title='Slide '+(i+1);
+    b.setAttribute('aria-label','Go to slide '+(i+1));
+    b.onclick=function(){ go(i); };
+    dots.appendChild(b); btns.push(b);
+  });
+
+  function paintIdx(){
+    cur.textContent=String(idx+1).padStart(2,'0');
+    btns.forEach(function(b,i){
+      var on=(i===idx);
+      b.classList.toggle('on',on);
+      if(on) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current');
+    });
+    var pb=document.getElementById('pdfbtn');
+    var fs=!!(document.fullscreenElement||document.webkitFullscreenElement);
+    if(pb) pb.style.display=(fs||(idx!==0&&idx!==slides.length-1))?'none':'';
+  }
+
+  /* .seen is sticky: a section that has been reached keeps its revealed state,
+     so scrolling back does not replay every stagger in the middle of a talk. */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      idx=slides.indexOf(e.target);
+      e.target.classList.add('seen');
+      paintIdx();
+    });
+  },{threshold:0.01,rootMargin:'-45% 0px -45% 0px'});
+  slides.forEach(function(s){ io.observe(s); });
+
+  /* Holding an arrow key must not queue a stack of smooth scrolls -- anything
+     within 420ms of the last nav lands instantly instead. */
+  var navAt=0;
+  function go(n){
+    idx=Math.max(0,Math.min(slides.length-1,n));
+    var now=(window.performance&&performance.now)?performance.now():Date.now();
+    var fast=(now-navAt)<420; navAt=now;
+    slides[idx].scrollIntoView({behavior:(fast||REDUCE)?'auto':'smooth'});
+    slides[idx].classList.add('seen');
+    paintIdx();
+  }
+  window.__deckGo=go;
+  window.__deckIdx=function(){ return idx; };
+
+  /* ---------------- waveform ---------------- */
+  function wave(el,n){
+    if(!el) return;
+    for(var i=0;i<n;i++){
+      var b=document.createElement('i');
+      /* deterministic pseudo-random so the bar profile is stable across
+         reloads and identical in an exported PDF */
+      var h=10+((i*37)%7)*6+((i*13)%5)*4;
+      b.style.setProperty('--k',i);
+      b.style.setProperty('--h',h+'px');
+      el.appendChild(b);
+    }
+  }
+  wave(document.getElementById('w0'),56);
+  wave(document.getElementById('w1'),56);
+
+  /* ---------------- blister wall ----------------
+     100 identical pockets; a handful turn red on a delay. The point of the
+     slide is that they are indistinguishable until the regulator says so, so
+     the "bad" indices are fixed rather than random -- the same pockets every
+     run, which also means the PDF export matches what the room saw. */
+  (function(){
+    var host=document.getElementById('blister'); if(!host) return;
+    var BAD=[7,23,41,58,66,89], j=0;
+    for(var i=0;i<100;i++){
+      var d=document.createElement('div');
+      d.className='pk'; d.style.setProperty('--k',i);
+      if(BAD.indexOf(i)>=0){ d.classList.add('bad'); d.style.setProperty('--j',j++); }
+      host.appendChild(d);
+    }
+  })();
+
+  /* ---------------- cold open ----------------
+     The utterance is the VERBATIM saaras:v3 transcript of "Dolo 650 safe hai
+     kya?" -- codemix STT returns native script, so the digits come back as
+     Hindi words. That is the whole reason the extraction step downstream
+     exists, so the slide has to show the real output, not a tidied one. */
+  var UTTER='डोलो छः सौ पचास सेफ है क्या?';
+  function graphemes(s){
+    try{
+      if(typeof Intl!=='undefined' && Intl.Segmenter){
+        var seg=new Intl.Segmenter('hi',{granularity:'grapheme'});
+        return Array.from(seg.segment(s),function(x){ return x.segment; });
+      }
+    }catch(_){}
+    return Array.from(s);           /* conjuncts may split; still legible */
+  }
+  var GR=graphemes(UTTER);
+
+  var cines=[].slice.call(document.querySelectorAll('.cine'));
+  cines.forEach(function(sec){
+    var out=sec.querySelector('#utter');
+    var timer=null;
+    sec.__play=function(){
+      sec.classList.remove('playing');
+      void sec.offsetWidth;                       /* restart the CSS timeline */
+      sec.classList.add('playing');
+      if(!out) return;
+      if(timer){ clearTimeout(timer); timer=null; }
+      if(REDUCE){ out.textContent=UTTER; return; }
+      out.innerHTML='<span class="cur">█</span>';
+      var i=0;
+      timer=setTimeout(function step(){
+        i++;
+        out.innerHTML=GR.slice(0,i).join('')+(i<GR.length?'<span class="cur">█</span>':'');
+        if(i<GR.length) timer=setTimeout(step,128);
+      },820);
+    };
+    var rp=sec.querySelector('.replay');
+    if(rp) rp.addEventListener('click',function(){ sec.__play(); });
+  });
+  var cio=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting && !e.target.dataset.played){
+        e.target.dataset.played='1';
+        e.target.__play();
+      }
+    });
+  },{threshold:0.5});
+  cines.forEach(function(s){ cio.observe(s); });
+
+  /* ---------------- number counters ----------------
+     Armed off .seen rather than on load, so the numbers count in when the
+     slide is actually on screen. Each element runs at most once. */
+  var nums=[].slice.call(document.querySelectorAll('[data-to]'));
+  function runNum(el){
+    if(el.dataset.ran) return; el.dataset.ran='1';
+    var to=parseFloat(el.dataset.to)||0;
+    var dec=parseInt(el.dataset.dec||'0',10);
+    var suf=el.dataset.suf||'';
+    if(REDUCE){ el.innerHTML=to.toFixed(dec)+suf; return; }
+    var t0=null, D=1150;
+    function frame(t){
+      if(t0===null) t0=t;
+      var p=Math.min(1,(t-t0)/D);
+      var e=1-Math.pow(1-p,3);                    /* ease-out cubic */
+      var v=to*e;
+      el.innerHTML=(dec?v.toFixed(dec):Math.round(v).toLocaleString('en-IN'))+suf;
+      if(p<1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  var nio=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting) runNum(e.target); });
+  },{threshold:0.4});
+  nums.forEach(function(n){ nio.observe(n); });
+
+  /* ---------------- keyboard ---------------- */
+  function toggleFs(){
+    var el=document.documentElement;
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+    } else {
+      (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+    }
+  }
+  addEventListener('keydown',function(e){
+    var t=e.target;
+    if(t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    var ctl=t && t.closest && t.closest('button,a,[role="button"]');
+    if(ctl && (e.key===' '||e.key==='Enter')) return;
+    var k=e.key;
+    if(k==='ArrowDown'||k==='ArrowRight'||k==='PageDown'||k===' '){ e.preventDefault(); go(idx+1); }
+    else if(k==='ArrowUp'||k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); go(idx-1); }
+    else if(k==='Home'){ e.preventDefault(); go(0); }
+    else if(k==='End'){ e.preventDefault(); go(slides.length-1); }
+    else if(k.toLowerCase()==='f'){ e.preventDefault(); toggleFs(); }
+    else if(k.toLowerCase()==='r'){ var s=slides[idx]; if(s&&s.__play){ e.preventDefault(); s.__play(); } }
+    else if(k.toLowerCase()==='n'){ e.preventDefault(); openNotes(); }
+    else if(k.toLowerCase()==='p' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); exportPDF(); }
+  });
+
+  /* ---------------- progress ---------------- */
+  var fill=document.getElementById('fill');
+  function progress(){
+    var max=document.documentElement.scrollHeight-innerHeight;
+    var p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+    fill.style.width=(p*100).toFixed(2)+'%';
+  }
+  addEventListener('scroll',progress,{passive:true});
+  addEventListener('resize',progress); progress();
+
+  ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){
+    document.addEventListener(ev,function(){
+      var t=idx;
+      requestAnimationFrame(function(){ slides[t].scrollIntoView({behavior:'auto'}); progress(); paintIdx(); });
+    });
+  });
+
+  /* ---------------- presenter notes (press N) ----------------
+     A second window, polled rather than pushed, so closing it can never wedge
+     the deck. Notes live here only; nothing is persisted anywhere. */
+  var NOTES={
+    s0:"HOLDING SCREEN. Leave this up while people settle. Say nothing.",
+    s1:"COLD OPEN. Let it run. That Devanagari line is the REAL saaras:v3 transcript of 'Dolo 650 safe hai kya' -- the digits come back as Hindi words, which is exactly why the extraction step exists. Say the words 'code-mixed' out loud.",
+    s2:"THE PICTURE. Pause on the wall before the red ones land. 'One of these will hurt you. Which one?' Wait. Then let them turn red.",
+    s3:"THE WALL. The truth is public, current and free. It is just an English PDF. Under 11% of India speaks any English (2011 Census).",
+    s4:"WHAT IT IS. A verdict card, NOT a chatbot. Say that explicitly -- judging guidance penalises 'generic AI chatbot bolted on'.",
+    s5:"THREE MODES. All three are shipped and live. Prescription mode is the one nobody expects -- free speech in, per-drug interactions and international bans out.",
+    s6:"THE TWO VERDICTS. This is the credibility slide. Telma 40 is a REAL counterfeit found live, not a seeded example. Then Dolo 650 green. Showing both proves it discriminates.",
+    s7:"DEMO. Switch to the browser. Mic first: 'Dolo 650 safe hai kya?'. Then TYPE Telma 40 (red), then Dolo 650 (green). Then repeat one to show the cache is instant. If the mic mishears, type it -- same endpoint, safer live.",
+    s8:"ARCHITECTURE. Six hops, every one is a sponsor API or a regulator. Point at degraded[] -- that is the safety story in one array.",
+    s9:"SARVAM. Four models, four different jobs. The kill test: remove it and there is no way in and no way out. English was never the product.",
+    s10:"ANAKIN. Search, Scraper, Wire. Lead with WHY WIRE: 1mg is a React storefront, a scraper dies silently on their next deploy. Then the ask: cdsco.gov.in as a catalog action.",
+    s11:"SOURCES (backup). Five authorities. The line to land is 'absence is evidence' -- no US label is a FINDING, not a missing field.",
+    s12:"SPEED (backup). 50s cold, 0.035s cached. Say the cold number first, unprompted. Owning it is what makes the cached number believable.",
+    s13:"FAILS SAFE (backup). The strongest slide if a judge is technical. An unchecked answer is amber and is never cached.",
+    s14:"LIMITS (backup). Say these before anyone asks. Batch-level PDFs sit behind POST forms -- and the fix is a Wire catalog action, not a scraper.",
+    s15:"NEXT (backup). WhatsApp voice notes is the one that lands -- the people who need this will never open a web app.",
+    s16:"CLOSE. Slow down. 'Every model Indian. Every fact live. Remove either sponsor and the product is dead.' Then stop talking."
+  };
+  var pw=null;
+  function openNotes(){
+    try{
+      if(pw && !pw.closed){ pw.focus(); return; }
+      pw=window.open('','davaa-notes','width=560,height=640');
+      if(!pw) return;
+      var d=pw.document;
+      d.open();
+      d.write('<!doctype html><meta charset="utf-8"><title>Presenter notes</title>');
+      d.write('<style>body{margin:0;background:#08080A;color:#F5F1E8;font:15px/1.6 system-ui,sans-serif;padding:22px}'
+        +'h1{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#948F84;font-weight:700;margin:0 0 14px}'
+        +'#n{font-size:19px;line-height:1.55;min-height:220px}'
+        +'#t{font-family:ui-monospace,Menlo,monospace;font-size:30px;color:#00E27A;margin:18px 0 6px}'
+        +'#x{font-size:13px;color:#6A665E;border-top:1px solid rgba(245,241,232,.14);padding-top:14px;margin-top:18px}'
+        +'b{color:#00E27A}</style>');
+      d.write('<h1>Davaa Sach &middot; presenter</h1><div id="t">0:00</div>'
+        +'<div id="s" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#948F84;margin-bottom:12px"></div>'
+        +'<div id="n"></div><div id="x"></div>');
+      d.close();
+      var t0=Date.now();
+      var iv=pw.setInterval(function(){
+        if(pw.closed){ pw.clearInterval(iv); return; }
+        var s=slides[idx], id=s?s.id:'';
+        var secs=Math.floor((Date.now()-t0)/1000);
+        pw.document.getElementById('t').textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
+        pw.document.getElementById('s').textContent='slide '+(idx+1)+' / '+slides.length+'  ·  '+id;
+        pw.document.getElementById('n').textContent=NOTES[id]||'';
+        var nx=slides[idx+1];
+        pw.document.getElementById('x').textContent=nx?('next →  '+(NOTES[nx.id]||'').slice(0,110)):'end of deck';
+      },250);
+      pw.document.addEventListener('keydown',function(e){
+        if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); go(idx+1); }
+        else if(e.key==='ArrowLeft'){ e.preventDefault(); go(idx-1); }
+      });
+    }catch(_){}
+  }
+
+
+  /* ---------------- credits portraits ----------------
+     A missing or unreadable portrait must degrade to a monogram, never to the
+     browser's broken-image glyph -- this is the last slide anyone sees. Checked
+     with .complete/naturalWidth too, because a file cached as a 0-byte response
+     fires `load`, not `error`. */
+  (function(){
+    function mono(img){
+      var p=img.parentElement; if(!p||p.querySelector('.mono')) return;
+      var d=document.createElement('div');
+      d.className='mono'; d.textContent=img.getAttribute('data-mono')||'';
+      img.remove(); p.appendChild(d);
+    }
+    [].slice.call(document.querySelectorAll('.port img')).forEach(function(img){
+      img.addEventListener('error',function(){ mono(img); });
+      if(img.complete && !img.naturalWidth) mono(img);
+    });
+  })();
+
+  /* ---------------- landscape PDF export ---------------- */
+  function exportPDF(){
+    var btn=document.getElementById('pdfbtn');
+    var old=btn?btn.textContent:'';
+    if(!window.html2canvas || !window.jspdf){ setTimeout(function(){ window.print(); },80); return; }
+    if(btn) btn.textContent='Building...';
+    var W=1280,H=720;
+    document.body.classList.add('exporting');
+    slides.forEach(function(s){ s.classList.add('seen'); });   /* nothing exports mid-reveal */
+    var ready=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    ready.then(function(){
+      var jsPDF=window.jspdf.jsPDF;
+      var pdf=new jsPDF({orientation:'landscape',unit:'px',format:[W,H],compress:true});
+      var pages=slides.filter(function(s){ return s.id!=='s0'; });  /* holding screen is for the room */
+      var i=0;
+      function next(){
+        if(i>=pages.length){
+          pdf.save('davaa-sach-deck.pdf');
+          document.body.classList.remove('exporting');
+          if(btn) btn.textContent=old;
+          return;
+        }
+        var s=pages[i], prev=s.getAttribute('style')||'';
+        var bg=getComputedStyle(s).backgroundColor;
+        if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent') bg='#08080A';
+        s.style.width=W+'px'; s.style.height=H+'px'; s.style.minHeight='0';
+        s.style.display='flex'; s.style.alignItems='center'; s.style.justifyContent='center';
+        s.style.padding='34px 58px';
+        html2canvas(s,{scale:2,width:W,height:H,windowWidth:W,windowHeight:H,
+          backgroundColor:bg,useCORS:false,imageTimeout:4000,logging:false})
+        .then(function(canvas){
+          s.setAttribute('style',prev);
+          if(btn) btn.textContent=(i+1)+'/'+pages.length;
+          if(i>0) pdf.addPage([W,H],'landscape');
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,H);
+          i++; next();
+        })
+        .catch(function(err){
+          s.setAttribute('style',prev);
+          console.error(err);
+          document.body.classList.remove('exporting');
+          if(btn) btn.textContent=old;
+        });
+      }
+      next();
+    });
+  }
+  document.getElementById('pdfbtn').addEventListener('click',exportPDF);
+
+  paintIdx();
+  slides[0].classList.add('seen');
+})();
+</script>
+</body>
+</html>

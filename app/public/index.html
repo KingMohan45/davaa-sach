@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Davaa Sach — is your medicine real?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Caveat:wght@600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#051F20; --surf:#0B2B26; --raise:#163832; --ln:#235347; --mut:#8EB69B; --fg:#DAF1DE;
+  --void:#020B0B; --sig:#CEFF32; --reject:#B4182D; --sun:#ADC178; --sky:#7CB9E8; --peach:#FDA481;
+  --ink:#051F20; --bd:3px solid var(--ln); --sh:7px 7px 0 var(--void); --rad:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--fg);background:var(--bg);
+  background-image:radial-gradient(rgba(218,241,222,.075) 1.3px,transparent 1.3px);
+  background-size:26px 26px;-webkit-font-smoothing:antialiased;min-height:100vh}
+#bg3d{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.8}
+.shell{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:22px 20px 70px}
+.brand{display:inline-flex;align-items:center;gap:10px;background:var(--raise);color:var(--fg);
+  font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  padding:8px 14px;border-radius:40px;box-shadow:4px 4px 0 var(--sig)}
+h1{font-family:"Archivo Black",Arial Black,sans-serif;font-size:clamp(30px,5.6vw,58px);line-height:.9;
+  letter-spacing:-.02em;text-transform:uppercase;margin:18px 0 6px}
+h1 em{font-style:normal;color:var(--sig)}
+.scribble{font-family:"Caveat",cursive;font-weight:700;color:var(--sig);
+  font-size:clamp(20px,2.9vw,30px);transform:rotate(-3deg);display:inline-block;margin-bottom:12px}
+p.lead{font-size:clamp(14px,1.8vw,17px);font-weight:500;max-width:58ch;line-height:1.45;color:var(--mut)}
+.tabs{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.tab{font-family:"Space Grotesk",sans-serif;font-size:13.5px;font-weight:700;background:var(--surf);
+  color:var(--mut);border:var(--bd);border-radius:14px;padding:11px 16px;cursor:pointer;transition:.16s;
+  display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left}
+.tab small{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.75;font-weight:700}
+.tab:hover{transform:translate(-2px,-2px);color:var(--fg)}
+.tab.on{background:var(--sig);color:var(--ink);border-color:var(--sig);box-shadow:5px 5px 0 var(--void)}
+.tab.on small{opacity:.7}
+.pane{display:none} .pane.on{display:block;animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.panel{background:var(--surf);border:var(--bd);border-radius:var(--rad);padding:22px;box-shadow:var(--sh);margin-top:18px}
+.langrow{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+.pill{font-family:"Space Mono",monospace;font-size:12px;font-weight:700;background:var(--raise);color:var(--mut);
+  border:2px solid var(--ln);border-radius:30px;padding:6px 14px;cursor:pointer;transition:.16s;white-space:nowrap}
+.pill:hover{transform:translate(-1px,-1px);color:var(--fg)}
+.pill.on{background:var(--sig);color:var(--ink);border-color:var(--sig);box-shadow:3px 3px 0 var(--void)}
+.askrow{display:flex;gap:12px;align-items:stretch}
+input.q,textarea.q{flex:1;min-width:0;background:var(--void);color:var(--fg);border:var(--bd);border-radius:14px;
+  padding:15px 17px;font:600 17px/1.35 "Space Grotesk",sans-serif;outline:none;resize:vertical}
+input.q::placeholder,textarea.q::placeholder{color:var(--mut);opacity:.65;font-weight:500}
+input.q:focus,textarea.q:focus{border-color:var(--sig)}
+button{font-family:"Space Grotesk",sans-serif;cursor:pointer;border:var(--bd);transition:.15s}
+.go{background:var(--sig);color:var(--ink);border-color:var(--sig);border-radius:14px;
+  font-weight:700;font-size:16px;padding:0 24px;box-shadow:5px 5px 0 var(--void)}
+.go:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--void)}
+.go:disabled{opacity:.45;cursor:wait}
+.mic{position:relative;width:60px;flex:0 0 60px;background:var(--raise);color:var(--fg);border-radius:14px;
+  font-family:"Space Mono",monospace;font-size:12px;font-weight:700;box-shadow:5px 5px 0 var(--void);display:grid;place-items:center}
+.mic:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--void)}
+.mic.rec{background:var(--reject);border-color:var(--reject);color:#fff;animation:pulse 1.05s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:5px 5px 0 var(--void),0 0 0 0 rgba(180,24,45,.55)}50%{box-shadow:5px 5px 0 var(--void),0 0 0 15px rgba(180,24,45,0)}}
+.wave{display:block;width:100%;height:0;border-radius:10px;background:var(--void);transition:height .25s,margin-top .25s}
+.wave.on{height:54px;margin-top:13px;border:2px solid var(--ln)}
+.exrow{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px;align-items:center}
+.exlab{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.ex{font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;background:transparent;color:var(--mut);
+  border:2px solid var(--ln);border-radius:30px;padding:5px 11px;cursor:pointer;transition:.15s;text-align:left}
+.ex:hover{color:var(--ink);background:var(--sun);border-color:var(--sun);transform:translate(-1px,-1px)}
+.pipe{margin-top:20px;display:none} .pipe.on{display:block;animation:fadeUp .3s ease both}
+.pipetitle{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mut);margin-bottom:11px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.steps{grid-template-columns:repeat(2,1fr)}}
+.step{background:var(--surf);border:2px solid var(--ln);border-radius:14px;padding:11px 12px;position:relative;
+  overflow:hidden;transition:.28s;opacity:.42}
+.step .vendor{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+.step .what{font-size:12.5px;font-weight:700;line-height:1.28}
+.step .dot{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--ln)}
+.step.run{opacity:1;border-color:var(--sig);box-shadow:4px 4px 0 var(--void)}
+.step.run .dot{background:var(--sig);animation:blip .75s ease-in-out infinite}
+.step.run::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--sig);
+  transform-origin:left;animation:sweep 1.5s ease-in-out infinite}
+.step.done{opacity:1;border-color:var(--sun)} .step.done .dot{background:var(--sun)}
+.step.fail{opacity:1;border-color:var(--peach)} .step.fail .dot{background:var(--peach)}
+@keyframes blip{0%,100%{transform:scale(1)}50%{transform:scale(1.7)}}
+@keyframes sweep{0%{transform:scaleX(0)}50%{transform:scaleX(1)}100%{transform:scaleX(0)}}
+.card{margin-top:20px;background:var(--surf);border:var(--bd);border-radius:var(--rad);padding:24px;
+  box-shadow:var(--sh);position:relative;overflow:hidden}
+.card.in{animation:slam .42s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes slam{0%{opacity:0;transform:scale(.92) translateY(16px)}100%{opacity:1;transform:none}}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--mut)}
+.card.flagged,.card.stop,.card.emergency{border-color:var(--reject)}
+.card.flagged::before,.card.stop::before,.card.emergency::before{background:var(--reject)}
+.card.clear,.card.ok{border-color:var(--sun)} .card.clear::before,.card.ok::before{background:var(--sun)}
+.card.unknown,.card.caution,.card.see_doctor{border-color:var(--peach)}
+.card.unknown::before,.card.caution::before,.card.see_doctor::before{background:var(--peach)}
+.card.routine{border-color:var(--sky)} .card.routine::before{background:var(--sky)}
+.verdict{font-family:"Archivo Black",Arial Black,sans-serif;font-size:clamp(21px,3.6vw,34px);
+  line-height:1;letter-spacing:-.02em;text-transform:uppercase;margin-bottom:11px}
+.card.flagged .verdict,.card.stop .verdict,.card.emergency .verdict{color:var(--reject)}
+.card.clear .verdict,.card.ok .verdict{color:var(--sun)}
+.card.unknown .verdict,.card.caution .verdict,.card.see_doctor .verdict{color:var(--peach)}
+.card.routine .verdict{color:var(--sky)}
+.reason{font-size:16px;font-weight:500;line-height:1.5}
+.local{font-size:19px;font-weight:600;line-height:1.5;margin-top:13px;padding:13px 15px;
+  background:var(--void);border-left:4px solid var(--sig);border-radius:0 12px 12px 0}
+.note{font-size:14px;font-weight:500;color:var(--mut);margin-top:11px}
+audio{width:100%;margin-top:14px;border-radius:10px}
+.srcs{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.src{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;background:var(--raise);color:var(--fg);
+  border:2px solid var(--ln);border-radius:30px;padding:5px 11px;text-decoration:none;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:.15s}
+.src:hover{border-color:var(--sig);color:var(--sig)}
+.badge{display:inline-block;font-family:"Space Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;background:var(--peach);color:var(--ink);border-radius:20px;padding:3px 10px;margin-bottom:9px}
+.finds{margin-top:15px;display:grid;gap:9px}
+.find{background:var(--void);border:2px solid var(--ln);border-radius:12px;padding:12px 14px;border-left-width:5px}
+.find.high{border-left-color:var(--reject)} .find.medium{border-left-color:var(--peach)} .find.low{border-left-color:var(--sun)}
+.find .fhead{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+.find .sev{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--raise);color:var(--fg)}
+.find.high .sev{background:var(--reject);color:#fff}
+.find.medium .sev{background:var(--peach);color:var(--ink)}
+.find .fdrug{font-weight:700;font-size:14px}
+.find .fkind{font-family:"Space Mono",monospace;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.find .fdet{font-size:14px;font-weight:500;line-height:1.45}
+.drugchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.drugchip{font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;background:var(--raise);
+  border:2px solid var(--ln);border-radius:30px;padding:4px 11px}
+.ask{margin-top:14px;padding:13px 15px;background:var(--void);border:2px dashed var(--ln);border-radius:12px}
+.ask h4{font-family:"Space Mono",monospace;font-size:10.5px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--sig);margin-bottom:8px}
+.ask li{font-size:14.5px;font-weight:500;line-height:1.5;margin-left:17px}
+.err{color:var(--peach);font-weight:600;font-size:14px;margin-top:13px;font-family:"Space Mono",monospace}
+.disc{margin-top:14px;font-size:12px;color:var(--mut);font-weight:600;line-height:1.5;
+  padding:11px 13px;border:2px solid var(--ln);border-radius:12px}
+.foot{margin-top:32px;font-size:12.5px;color:var(--mut);line-height:1.7;font-weight:500}
+.foot b{color:var(--fg)}
+</style>
+</head>
+<body>
+<canvas id="bg3d"></canvas>
+<div class="shell">
+  <div class="brand">Davaa Sach · दवा सच</div>
+  <h1>Is your <em>medicine</em> actually safe?</h1>
+  <div class="scribble">ask out loud, in your own language</div>
+  <p class="lead">India's regulator publishes its Not-of-Standard-Quality list as English PDFs. A drug restricted in Europe can still be on the shelf here. Ask in Kannada, Hindi, Telugu, Tamil or English.</p>
+
+  <div class="langrow" id="langs">
+    <button class="pill on" data-l="kn-IN">ಕನ್ನಡ Kannada</button>
+    <button class="pill" data-l="hi-IN">हिन्दी Hindi</button>
+    <button class="pill" data-l="te-IN">తెలుగు Telugu</button>
+    <button class="pill" data-l="ta-IN">தமிழ் Tamil</button>
+    <button class="pill" data-l="en-IN">English</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" data-p="p-check"><small>Patient</small>Check a medicine</button>
+    <button class="tab" data-p="p-rx"><small>Doctor</small>Review a prescription</button>
+    <button class="tab" data-p="p-sym"><small>Patient</small>Describe symptoms</button>
+    <button class="tab" data-p="p-int"><small>Clinic</small>Interpreter</button>
+  </div>
+
+  <div class="pane on" id="p-check">
+    <div class="panel">
+      <div class="askrow">
+        <input class="q" id="q" placeholder="Dolo 650 — or tap MIC and just say it" autocomplete="off" />
+        <button class="mic" id="mic1" title="Speak, code-mixed is fine">MIC</button>
+        <button class="go" id="go1">Check</button>
+      </div>
+      <canvas class="wave" id="wave1"></canvas>
+      <div class="exrow"><span class="exlab">try</span>
+        <button class="ex">Telma 40</button><button class="ex">Dolo 650</button>
+        <button class="ex">Pan 40</button><button class="ex">Augmentin 625</button>
+      </div>
+    </div>
+    <div class="pipe" id="pipe1"><div class="pipetitle" id="pt1">live pipeline</div>
+      <div class="steps">
+        <div class="step" id="c-stt"><span class="dot"></span><div class="vendor">Sarvam · saaras:v3</div><div class="what">Hear the question</div></div>
+        <div class="step" id="c-anakin"><span class="dot"></span><div class="vendor">Anakin · search + wire</div><div class="what">CDSCO alerts &amp; price</div></div>
+        <div class="step" id="c-reason"><span class="dot"></span><div class="vendor">Sarvam · 105b</div><div class="what">Weigh the evidence</div></div>
+        <div class="step" id="c-voice"><span class="dot"></span><div class="vendor">Sarvam · bulbul:v3</div><div class="what">Answer out loud</div></div>
+      </div></div>
+    <div class="card" id="card1" hidden>
+      <div class="badge" id="badge1" hidden></div>
+      <div class="verdict" id="v1"></div>
+      <div class="reason" id="r1"></div>
+      <div class="local" id="l1"></div>
+      <div class="note" id="n1"></div>
+      <audio id="au1" controls hidden></audio>
+      <div class="srcs" id="s1"></div>
+    </div>
+    <div class="err" id="e1"></div>
+  </div>
+
+  <div class="pane" id="p-rx">
+    <div class="panel">
+      <div class="askrow">
+        <textarea class="q" id="rx" rows="2" placeholder="Say or type what you are about to prescribe"></textarea>
+        <button class="mic" id="mic2" title="Dictate">MIC</button>
+        <button class="go" id="go2">Review</button>
+      </div>
+      <canvas class="wave" id="wave2"></canvas>
+      <div class="exrow"><span class="exlab">try</span>
+        <button class="ex">AFib patient, starting Warfarin 5 mg and also Aspirin 150 for chest pain</button>
+        <button class="ex">Starting her on Nimesulide 100 and Pan 40 for the back pain</button>
+      </div>
+    </div>
+    <div class="pipe" id="pipe2"><div class="pipetitle" id="pt2">live pipeline</div>
+      <div class="steps">
+        <div class="step" id="x-stt"><span class="dot"></span><div class="vendor">Sarvam · saaras:v3</div><div class="what">Hear the prescription</div></div>
+        <div class="step" id="x-anakin"><span class="dot"></span><div class="vendor">Anakin · scrape + search</div><div class="what">WHO alerts, bans by country</div></div>
+        <div class="step" id="x-fda"><span class="dot"></span><div class="vendor">openFDA · label</div><div class="what">Interactions, boxed warnings</div></div>
+        <div class="step" id="x-reason"><span class="dot"></span><div class="vendor">Sarvam · 105b</div><div class="what">Second-read the decision</div></div>
+      </div></div>
+    <div class="card" id="card2" hidden>
+      <div class="badge" id="badge2" hidden></div>
+      <div class="drugchips" id="chips2"></div>
+      <div class="verdict" id="v2"></div>
+      <div class="reason" id="r2"></div>
+      <div class="local" id="l2"></div>
+      <div class="finds" id="f2"></div>
+      <audio id="au2" controls hidden></audio>
+      <div class="srcs" id="s2"></div>
+      <div class="disc">A second reader, not a decision. It surfaces what regulators and drug labels say. The prescribing decision remains the clinician's.</div>
+    </div>
+    <div class="err" id="e2"></div>
+  </div>
+
+  <div class="pane" id="p-sym">
+    <div class="panel">
+      <div class="askrow">
+        <textarea class="q" id="sym" rows="2" placeholder="Describe what you are feeling, in your own words"></textarea>
+        <button class="mic" id="mic3" title="Speak your symptoms">MIC</button>
+        <button class="go" id="go3">Ask</button>
+      </div>
+      <canvas class="wave" id="wave3"></canvas>
+      <div class="exrow"><span class="exlab">try</span>
+        <button class="ex">Burning in my chest after eating, worse at night, two weeks</button>
+        <button class="ex">Sar dard aur bukhar hai teen din se</button>
+      </div>
+    </div>
+    <div class="pipe" id="pipe3"><div class="pipetitle" id="pt3">live pipeline</div>
+      <div class="steps">
+        <div class="step" id="y-stt"><span class="dot"></span><div class="vendor">Sarvam · saaras:v3</div><div class="what">Hear the symptoms</div></div>
+        <div class="step" id="y-map"><span class="dot"></span><div class="vendor">Sarvam · 105b</div><div class="what">Restate clinically</div></div>
+        <div class="step" id="y-ev"><span class="dot"></span><div class="vendor">Anakin + openFDA</div><div class="what">Approved uses, alerts</div></div>
+        <div class="step" id="y-voice"><span class="dot"></span><div class="vendor">Sarvam · bulbul:v3</div><div class="what">Explain out loud</div></div>
+      </div></div>
+    <div class="card" id="card3" hidden>
+      <div class="verdict" id="v3"></div>
+      <div class="reason" id="r3"></div>
+      <div class="local" id="l3"></div>
+      <div class="finds" id="f3"></div>
+      <div class="ask" id="ask3" hidden><h4>Ask your doctor</h4><ul id="asku"></ul></div>
+      <audio id="au3" controls hidden></audio>
+      <div class="disc">Not a prescription and not a diagnosis. It tells you what a medicine is approved for and what to ask. Confirm everything with a doctor or pharmacist.</div>
+    </div>
+    <div class="err" id="e3"></div>
+  </div>
+
+  <div class="pane" id="p-int">
+    <div class="panel">
+      <div class="exrow" style="margin-top:0;margin-bottom:14px">
+        <span class="exlab">speaking</span>
+        <button class="pill on" id="sp-pat" data-s="patient">Patient</button>
+        <button class="pill" id="sp-doc" data-s="doctor">Doctor</button>
+        <span class="exlab" style="margin-left:10px">from</span>
+        <select id="ifrom" class="pill" style="cursor:pointer"></select>
+        <span class="exlab">to</span>
+        <select id="ito" class="pill" style="cursor:pointer"></select>
+      </div>
+      <div class="askrow">
+        <textarea class="q" id="int" rows="2" placeholder="What was said, in the speaker's own language"></textarea>
+        <button class="mic" id="mic4" title="Speak">MIC</button>
+        <button class="go" id="go4">Translate</button>
+      </div>
+      <canvas class="wave" id="wave4"></canvas>
+      <div class="exrow"><span class="exlab">try</span>
+        <button class="ex">Do din se pet me tez dard hai aur ulti ho rahi hai, khana nahi ja raha</button>
+        <button class="ex">Chaati me jalan hoti hai raat ko, do hafte se</button>
+      </div>
+    </div>
+    <div class="pipe" id="pipe4"><div class="pipetitle" id="pt4">live pipeline</div>
+      <div class="steps">
+        <div class="step" id="i-stt"><span class="dot"></span><div class="vendor">Sarvam · saaras:v3</div><div class="what">Hear the speaker</div></div>
+        <div class="step" id="i-tr"><span class="dot"></span><div class="vendor">Sarvam · translate:v1</div><div class="what">Cross the language</div></div>
+        <div class="step" id="i-cl"><span class="dot"></span><div class="vendor">Sarvam · 105b</div><div class="what">Structure for the doctor</div></div>
+        <div class="step" id="i-vo"><span class="dot"></span><div class="vendor">Sarvam · bulbul:v3</div><div class="what">Say it out loud</div></div>
+      </div></div>
+    <div class="card" id="card4" hidden>
+      <div class="verdict" id="v4">Interpreted</div>
+      <div class="reason" id="r4"></div>
+      <div class="local" id="l4"></div>
+      <div class="finds" id="f4"></div>
+      <div class="ask" id="ask4" hidden><h4>Ask the patient</h4><ul id="asku4"></ul></div>
+      <audio id="au4" controls hidden></audio>
+      <div class="disc">A communication aid, not a medical record. Confirm anything clinically important directly with the patient.</div>
+    </div>
+    <div class="err" id="e4"></div>
+  </div>
+
+  <p class="foot">
+    <b>Live data:</b> CDSCO alert pages and WHO's falsified-medicine alert index, scraped at question time by <b>Anakin.io</b> (search · url-scraper · Wire on Tata 1mg); drug labels, interactions and recalls from <b>openFDA</b>.<br>
+    <b>Voice and reasoning:</b> <b>Sarvam.ai</b> — saaras:v3 code-mixed speech, sarvam-105b, sarvam-translate:v1, bulbul:v3.<br>
+    Not medical advice. Always confirm with a pharmacist or doctor.
+  </p>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let lang = "kn-IN";
+document.querySelectorAll("#langs .pill").forEach((p) => p.onclick = () => {
+  document.querySelectorAll("#langs .pill").forEach((x) => x.classList.remove("on"));
+  p.classList.add("on"); lang = p.dataset.l;
+});
+document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.remove("on"));
+  document.querySelectorAll(".pane").forEach((x) => x.classList.remove("on"));
+  t.classList.add("on"); $(t.dataset.p).classList.add("on");
+});
+const mark = (id, cls) => { const e = $(id); if (e) e.className = "step " + cls; };
+function pipe(id, steps, show) { $(id).classList.toggle("on", !!show); steps.forEach((s) => mark(s, "")); }
+function srcList(el, sources) {
+  el.innerHTML = "";
+  for (const s of sources || []) {
+    if (!s || !s.url) continue;
+    const a = document.createElement("a");
+    a.className = "src"; a.href = s.url; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = s.title || s.url;
+    el.appendChild(a);
+  }
+}
+function findList(el, findings) {
+  el.innerHTML = "";
+  for (const f of findings || []) {
+    if (!f || f.kind === "none") continue;
+    const d = document.createElement("div");
+    d.className = "find " + (f.severity || "low");
+    d.innerHTML = '<div class="fhead"><span class="sev"></span><span class="fdrug"></span><span class="fkind"></span></div><div class="fdet"></div>';
+    d.querySelector(".sev").textContent = f.severity || "low";
+    d.querySelector(".fdrug").textContent = f.drug || "";
+    d.querySelector(".fkind").textContent = String(f.kind || "").replace(/_/g, " ");
+    d.querySelector(".fdet").textContent = f.detail || "";
+    el.appendChild(d);
+  }
+}
+function playAudio(el, b64) {
+  if (b64) { el.src = "data:audio/wav;base64," + b64; el.hidden = false; el.play().catch(() => {}); }
+  else el.hidden = true;
+}
+
+const C = ["c-stt", "c-anakin", "c-reason", "c-voice"];
+document.querySelectorAll("#p-check .ex").forEach((e) => e.onclick = () => { $("q").value = e.textContent; check(); });
+$("go1").onclick = check;
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") check(); });
+async function check() {
+  const drug = $("q").value.trim(); if (!drug) return;
+  $("go1").disabled = true; $("e1").textContent = ""; $("card1").hidden = true; $("badge1").hidden = true;
+  pipe("pipe1", C, true);
+  mark("c-stt", $("q").dataset.fromVoice === "1" ? "done" : ""); mark("c-anakin", "run");
+  $("pt1").textContent = "live pipeline — querying regulator data";
+  const tm = setTimeout(() => mark("c-reason", "run"), 2500);
+  try {
+    const r = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ drug, lang }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+    clearTimeout(tm);
+    const deg = d.degraded || [];
+    mark("c-anakin", deg.includes("alerts") ? "fail" : "done"); mark("c-reason", "done");
+    mark("c-voice", d.audioBase64 ? "done" : "fail");
+    $("pt1").textContent = deg.length ? "live pipeline — " + deg.join(" + ") + " unreachable"
+      : (d.cached ? "live pipeline — complete (served from cache)" : "live pipeline — complete");
+    $("card1").className = "card in " + (d.verdict || "unknown");
+    $("v1").textContent = d.verdict === "flagged" ? "Flagged by the regulator"
+      : d.verdict === "clear" ? "No alert found" : "Could not confirm";
+    $("r1").textContent = d.reason || "";
+    $("l1").textContent = d.reasonLocal || ""; $("l1").style.display = d.reasonLocal ? "" : "none";
+    $("n1").textContent = d.priceNote || "";
+    if (deg.length) { $("badge1").textContent = "degraded · " + deg.join(" + "); $("badge1").hidden = false; }
+    $("card1").hidden = false;
+    playAudio($("au1"), d.audioBase64); srcList($("s1"), d.sources);
+  } catch (e) {
+    clearTimeout(tm); C.forEach((s) => { if ($(s).className.includes("run")) mark(s, "fail"); });
+    $("pt1").textContent = "live pipeline — failed"; $("e1").textContent = String(e.message || e);
+  } finally { $("go1").disabled = false; $("q").dataset.fromVoice = "0"; }
+}
+
+const X = ["x-stt", "x-anakin", "x-fda", "x-reason"];
+document.querySelectorAll("#p-rx .ex").forEach((e) => e.onclick = () => { $("rx").value = e.textContent; review(); });
+$("go2").onclick = review;
+async function review() {
+  const text = $("rx").value.trim(); if (!text) return;
+  $("go2").disabled = true; $("e2").textContent = ""; $("card2").hidden = true; $("badge2").hidden = true;
+  pipe("pipe2", X, true);
+  mark("x-stt", $("rx").dataset.fromVoice === "1" ? "done" : ""); mark("x-anakin", "run"); mark("x-fda", "run");
+  $("pt2").textContent = "live pipeline — WHO alert index, bans by country, FDA labels";
+  const tm = setTimeout(() => mark("x-reason", "run"), 3000);
+  try {
+    const r = await fetch("/api/prescription", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+    clearTimeout(tm);
+    const deg = d.degraded || [];
+    mark("x-anakin", deg.includes("who") ? "fail" : "done"); mark("x-fda", "done"); mark("x-reason", "done");
+    const t = d.timings || {};
+    $("pt2").textContent = t.total
+      ? `live pipeline — complete in ${(t.total / 1000).toFixed(1)}s (evidence ${t.evidence}ms · review ${t.review}ms)`
+      : "live pipeline — complete";
+    $("card2").className = "card in " + (d.verdict || "caution");
+    $("v2").textContent = d.verdict === "stop" ? "Stop — do not prescribe as stated"
+      : d.verdict === "ok" ? "No safety barrier found" : "Caution — review before prescribing";
+    $("r2").textContent = d.headline || "";
+    $("l2").textContent = d.headlineLocal || ""; $("l2").style.display = d.headlineLocal ? "" : "none";
+    $("chips2").innerHTML = "";
+    for (const dr of d.drugs || []) {
+      const c = document.createElement("span"); c.className = "drugchip"; c.textContent = dr; $("chips2").appendChild(c);
+    }
+    findList($("f2"), d.findings);
+    if (deg.length) { $("badge2").textContent = "degraded · " + deg.join(" + "); $("badge2").hidden = false; }
+    $("card2").hidden = false;
+    playAudio($("au2"), d.audioBase64); srcList($("s2"), d.sources);
+  } catch (e) {
+    clearTimeout(tm); X.forEach((s) => { if ($(s).className.includes("run")) mark(s, "fail"); });
+    $("pt2").textContent = "live pipeline — failed"; $("e2").textContent = String(e.message || e);
+  } finally { $("go2").disabled = false; $("rx").dataset.fromVoice = "0"; }
+}
+
+const Y = ["y-stt", "y-map", "y-ev", "y-voice"];
+const I = ["i-stt", "i-tr", "i-cl", "i-vo"];
+document.querySelectorAll("#p-sym .ex").forEach((e) => e.onclick = () => { $("sym").value = e.textContent; symptoms(); });
+$("go3").onclick = symptoms;
+async function symptoms() {
+  const text = $("sym").value.trim(); if (!text) return;
+  $("go3").disabled = true; $("e3").textContent = ""; $("card3").hidden = true; $("ask3").hidden = true;
+  pipe("pipe3", Y, true);
+  mark("y-stt", $("sym").dataset.fromVoice === "1" ? "done" : ""); mark("y-map", "run");
+  $("pt3").textContent = "live pipeline — restating symptoms clinically";
+  const tm = setTimeout(() => mark("y-ev", "run"), 2500);
+  try {
+    const r = await fetch("/api/symptoms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, lang }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+    clearTimeout(tm);
+    mark("y-map", "done"); mark("y-ev", (d.degraded || []).includes("who") ? "fail" : "done");
+    mark("y-voice", d.audioBase64 ? "done" : "fail");
+    $("pt3").textContent = "live pipeline — complete";
+    $("card3").className = "card in " + (d.urgency || "see_doctor");
+    $("v3").textContent = d.urgency === "emergency" ? "Get emergency care now"
+      : d.urgency === "routine" ? "Routine — but confirm with a doctor" : "See a doctor about this";
+    $("r3").textContent = d.summary || "";
+    $("l3").textContent = d.summaryLocal || ""; $("l3").style.display = d.summaryLocal ? "" : "none";
+    findList($("f3"), (d.options || []).map((o) => ({
+      drug: o.name, kind: "commonly used for", severity: o.cautionFlag ? "medium" : "low",
+      detail: (o.whatItIsFor || "") + (o.cautionFlag ? " — Caution: " + o.cautionFlag : ""),
+    })));
+    const qs = d.askYourDoctor || [];
+    $("asku").innerHTML = "";
+    for (const q of qs) { const li = document.createElement("li"); li.textContent = q; $("asku").appendChild(li); }
+    $("ask3").hidden = !qs.length;
+    $("card3").hidden = false;
+    playAudio($("au3"), d.audioBase64);
+  } catch (e) {
+    clearTimeout(tm); Y.forEach((s) => { if ($(s).className.includes("run")) mark(s, "fail"); });
+    $("pt3").textContent = "live pipeline — failed"; $("e3").textContent = String(e.message || e);
+  } finally { $("go3").disabled = false; $("sym").dataset.fromVoice = "0"; }
+}
+
+let rec = null, chunks = [], micStarting = false, waveStop = null;
+function drawWave(cv, stream) {
+  cv.classList.add("on");
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const an = ctx.createAnalyser(); an.fftSize = 1024;
+  ctx.createMediaStreamSource(stream).connect(an);
+  const buf = new Uint8Array(an.frequencyBinCount), g = cv.getContext("2d");
+  let raf = null;
+  (function loop() {
+    raf = requestAnimationFrame(loop);
+    const w = cv.width = cv.clientWidth, h = cv.height = cv.clientHeight;
+    if (!w || !h) return;
+    an.getByteTimeDomainData(buf); g.clearRect(0, 0, w, h);
+    g.lineWidth = 2.5; g.strokeStyle = "#CEFF32"; g.beginPath();
+    for (let i = 0; i < buf.length; i++) {
+      const x = (i / buf.length) * w, y = (buf[i] / 128) * (h / 2);
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.stroke();
+  })();
+  return () => { cancelAnimationFrame(raf); cv.classList.remove("on"); ctx.close().catch(() => {}); };
+}
+const MICS = [
+  { btn: "mic1", wave: "wave1", field: "q",   step: "c-stt", pipeId: "pipe1", steps: C, err: "e1", go: check },
+  { btn: "mic2", wave: "wave2", field: "rx",  step: "x-stt", pipeId: "pipe2", steps: X, err: "e2", go: review },
+  { btn: "mic3", wave: "wave3", field: "sym", step: "y-stt", pipeId: "pipe3", steps: Y, err: "e3", go: symptoms },
+  { btn: "mic4", wave: "wave4", field: "int", step: "i-stt", pipeId: "pipe4", steps: I, err: "e4", go: interpret },
+];
+for (const m of MICS) {
+  $(m.btn).onclick = async () => {
+    if (rec && rec.state === "recording") { rec.stop(); return; }
+    if (micStarting) return; // getUserMedia is async — a second tap must not open a 2nd recorder
+    try {
+      micStarting = true;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      rec = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      rec.ondataavailable = (e) => chunks.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        $(m.btn).classList.remove("rec");
+        if (waveStop) { waveStop(); waveStop = null; }
+        pipe(m.pipeId, m.steps, true); mark(m.step, "run");
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+        try {
+          const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioBase64: btoa(bin), mime: "audio/webm" }) });
+          const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+          mark(m.step, "done");
+          // Tab 1 wants only the drug name; tabs 2 and 3 need the whole spoken sentence.
+          const val = m.field === "q" ? (d.drugLatin || d.transcript || "") : (d.transcript || d.drugLatin || "");
+          $(m.field).value = val;
+          // Do NOT switch `lang` to d.detectedLang — the pill is the user's chosen ANSWER language;
+          // code-mixed speech detects as en-IN, which would answer a Kannada user in English.
+          if (val) { $(m.field).dataset.fromVoice = "1"; m.go(); }
+          else { mark(m.step, "fail"); $(m.err).textContent = "Could not make that out. Try again, or type it."; }
+        } catch (e) { mark(m.step, "fail"); $(m.err).textContent = "STT: " + String(e.message || e); }
+      };
+      rec.start(); $(m.btn).classList.add("rec"); micStarting = false;
+      try { waveStop = drawWave($(m.wave), stream); } catch (e) {}
+      setTimeout(() => { if (rec && rec.state === "recording") rec.stop(); }, 25000);
+    } catch (e) { micStarting = false; $(m.err).textContent = "Mic: " + String(e.message || e); }
+  };
+}
+
+/* ---------- TAB 4: interpreter ---------- */
+const LANGS = [["hi-IN","हिन्दी Hindi"],["kn-IN","ಕನ್ನಡ Kannada"],["te-IN","తెలుగు Telugu"],["ta-IN","தமிழ் Tamil"],["en-IN","English"],["bn-IN","বাংলা Bengali"],["mr-IN","मराठी Marathi"],["gu-IN","ગુજરાતી Gujarati"],["ml-IN","മലയാളം Malayalam"],["od-IN","ଓଡ଼ିଆ Odia"],["pa-IN","ਪੰਜਾਬੀ Punjabi"]];
+for (const [sel, def] of [["ifrom","hi-IN"],["ito","kn-IN"]]) {
+  const el = $(sel);
+  for (const [v, label] of LANGS) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = label; if (v === def) o.selected = true;
+    el.appendChild(o);
+  }
+}
+let speaker = "patient";
+for (const id of ["sp-pat","sp-doc"]) $(id).onclick = () => {
+  $("sp-pat").classList.toggle("on", id === "sp-pat");
+  $("sp-doc").classList.toggle("on", id === "sp-doc");
+  speaker = $(id).dataset.s;
+};
+document.querySelectorAll("#p-int .ex").forEach((e) => e.onclick = () => { $("int").value = e.textContent; interpret(); });
+$("go4").onclick = interpret;
+async function interpret() {
+  const text = $("int").value.trim(); if (!text) return;
+  $("go4").disabled = true; $("e4").textContent = ""; $("card4").hidden = true; $("ask4").hidden = true;
+  pipe("pipe4", I, true);
+  mark("i-stt", $("int").dataset.fromVoice === "1" ? "done" : ""); mark("i-tr", "run");
+  $("pt4").textContent = "live pipeline — crossing the language";
+  const tm = setTimeout(() => mark("i-cl", "run"), 1800);
+  try {
+    const r = await fetch("/api/interpret", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, from: $("ifrom").value, to: $("ito").value, speaker }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+    clearTimeout(tm);
+    mark("i-tr", "done"); mark("i-cl", d.clinical ? "done" : ""); mark("i-vo", d.audioBase64 ? "done" : "fail");
+    const t = d.timings || {};
+    $("pt4").textContent = t.total ? `live pipeline — complete in ${(t.total/1000).toFixed(1)}s` : "live pipeline — complete";
+    $("card4").className = "card in routine";
+    $("v4").textContent = speaker === "patient" ? "Patient said" : "Doctor said";
+    $("r4").textContent = d.original || "";
+    $("l4").textContent = d.translated || "";
+    const cl = d.clinical || null;
+    findList($("f4"), cl ? [
+      cl.complaint ? { drug: "Chief complaint", kind: "clinical", severity: "low", detail: cl.complaint + (cl.duration ? " · " + cl.duration : "") } : null,
+      ...(cl.redFlags || []).map((f) => ({ drug: "Red flag", kind: "urgent", severity: "high", detail: f })),
+    ].filter(Boolean) : []);
+    const qs = (cl && cl.askBack) || [];
+    $("asku4").innerHTML = "";
+    for (const q of qs) { const li = document.createElement("li"); li.textContent = q; $("asku4").appendChild(li); }
+    $("ask4").hidden = !qs.length;
+    $("card4").hidden = false;
+    playAudio($("au4"), d.audioBase64);
+  } catch (e) {
+    clearTimeout(tm); I.forEach((x) => { if ($(x).className.includes("run")) mark(x, "fail"); });
+    $("pt4").textContent = "live pipeline — failed"; $("e4").textContent = String(e.message || e);
+  } finally { $("go4").disabled = false; $("int").dataset.fromVoice = "0"; }
+}
+
+(function () {
+  if (!window.THREE) return; // CDN blocked: the page still works completely
+  const rend = new THREE.WebGLRenderer({ canvas: $("bg3d"), antialias: true, alpha: true });
+  rend.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
+  cam.position.z = 26;
+  const group = new THREE.Group(); scene.add(group);
+  const geo = new THREE.IcosahedronGeometry(0.42, 1);
+  const mA = new THREE.MeshBasicMaterial({ color: 0xceff32, wireframe: true, transparent: true, opacity: 0.5 });
+  const mB = new THREE.MeshBasicMaterial({ color: 0x8eb69b, wireframe: true, transparent: true, opacity: 0.3 });
+  const pts = [], N = 34;
+  for (let i = 0; i < N; i++) {
+    const t = (i / N) * Math.PI * 5, y = (i / N) * 34 - 17;
+    for (const [ph, m] of [[0, mA], [Math.PI, mB]]) {
+      const p = new THREE.Vector3(Math.cos(t + ph) * 7.2, y, Math.sin(t + ph) * 7.2);
+      const mesh = new THREE.Mesh(geo, m); mesh.position.copy(p); group.add(mesh); pts.push(p);
+    }
+  }
+  group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0x235347, transparent: true, opacity: 0.55 })));
+  let mx = 0, my = 0;
+  addEventListener("mousemove", (e) => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; });
+  function size() { rend.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
+  addEventListener("resize", size); size();
+  (function tick(t) {
+    requestAnimationFrame(tick);
+    group.rotation.y = t * 0.00013 + mx * 0.5; group.rotation.x = my * 0.28;
+    group.position.y = Math.sin(t * 0.0004) * 1.2;
+    rend.render(scene, cam);
+  })(0);
+})();
+</script>
+</body>
+</html>
