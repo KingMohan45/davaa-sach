@@ -9,6 +9,7 @@ import crypto from "crypto";
 const app = express();
 app.use(express.json({ limit: "25mb" })); // audio arrives as base64 JSON
 app.use(express.static("public"));
+app.get("/clinic", (_req, res) => res.sendFile(path.resolve("public/clinic.html")));
 
 const SARVAM = "https://api.sarvam.ai";
 const ANAKIN = "https://api.anakin.io/v1";

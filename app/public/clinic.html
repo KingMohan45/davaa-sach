@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Davaa Sach · Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#051F20; --surf:#0B2B26; --raise:#163832; --ln:#235347; --mut:#8EB69B; --fg:#DAF1DE;
+  --void:#020B0B; --sig:#CEFF32; --reject:#B4182D; --sun:#ADC178; --sky:#7CB9E8; --peach:#FDA481;
+  --ink:#051F20; --bd:3px solid var(--ln); --rad:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--fg);background:var(--bg);
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+button,select,input{font-family:inherit}
+.mono{font-family:"Space Mono",monospace}
+
+/* header */
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:var(--bd);background:var(--surf);flex:0 0 auto}
+.brand{font-family:"Archivo Black",Arial Black,sans-serif;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand i{font-style:normal;color:var(--sig)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;margin-right:8px;vertical-align:1px}
+.dot.on{background:var(--sig);box-shadow:0 0 0 4px rgba(206,255,50,.16);animation:bl 1.6s ease-in-out infinite}
+@keyframes bl{50%{opacity:.45}}
+.pair{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+.tag{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--mut)}
+.tag.pat{color:var(--sky)} .tag.doc{color:var(--sun)}
+select.pill{font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;background:var(--raise);color:var(--fg);
+  border:2px solid var(--ln);border-radius:9px;padding:6px 9px;cursor:pointer}
+.swap{cursor:pointer;color:var(--mut);font-size:17px;user-select:none;padding:0 2px}
+.swap:hover{color:var(--sig)}
+.ghost{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;background:transparent;color:var(--mut);
+  border:2px solid var(--ln);border-radius:9px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+.ghost:hover{color:var(--ink);background:var(--sig);border-color:var(--sig)}
+
+/* 3 columns */
+main{flex:1;display:grid;grid-template-columns:250px 1fr 300px;min-height:0}
+aside,.rail{background:var(--surf);display:flex;flex-direction:column;min-height:0}
+aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
+.colhead{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mut);padding:13px 16px 9px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.scroll{overflow:auto;padding:0 12px 14px;min-height:0;flex:1}
+
+/* history */
+.vis{width:100%;text-align:left;background:var(--void);border:2px solid var(--ln);border-radius:12px;
+  padding:10px 12px;margin-bottom:9px;cursor:pointer;color:var(--fg);display:block}
+.vis:hover{border-color:var(--mut)}
+.vis.on{border-color:var(--sig);box-shadow:3px 3px 0 var(--void)}
+.vis .vt{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--mut);
+  display:flex;justify-content:space-between;gap:8px}
+.vis.on .vt{color:var(--sig)}
+.vis .vp{font-size:13px;font-weight:600;line-height:1.35;margin-top:5px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vis .vl{font-family:"Space Mono",monospace;font-size:9px;color:var(--mut);margin-top:6px;letter-spacing:.06em}
+.newbtn{width:100%;background:var(--sig);color:var(--ink);border:2px solid var(--sig);border-radius:12px;
+  font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;padding:11px;cursor:pointer;margin:0 0 10px}
+.newbtn:hover{transform:translate(-1px,-1px)}
+.hwrap{padding:12px 12px 0}
+
+/* thread */
+.mid{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+.thread{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:15px}
+.empty{font-size:13.5px;color:var(--mut);font-style:italic;margin:auto;max-width:34ch;text-align:center;line-height:1.5}
+.msg{max-width:74%;display:flex;flex-direction:column;gap:5px}
+.msg.patient{align-self:flex-start}
+.msg.doctor{align-self:flex-end;align-items:flex-end}
+.who{font-family:"Space Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.msg.patient .who{color:var(--sky)} .msg.doctor .who{color:var(--sun)}
+.bub{background:var(--surf);border:2px solid var(--ln);border-radius:16px;padding:12px 15px}
+.msg.patient .bub{border-bottom-left-radius:5px;border-left:4px solid var(--sky)}
+.msg.doctor .bub{border-bottom-right-radius:5px;border-right:4px solid var(--sun)}
+.said{font-size:15.5px;font-weight:600;line-height:1.45}
+.xl{font-size:15px;font-weight:500;line-height:1.45;color:var(--sig);margin-top:9px;padding-top:9px;border-top:1px dashed var(--ln)}
+.bub.fail{border-color:var(--reject)}
+.loading{margin-top:9px;padding-top:9px;border-top:1px dashed var(--ln);display:flex;align-items:center}
+.dots{display:inline-flex;gap:5px;align-items:center;height:14px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--sig);display:block;animation:bounce 1.05s infinite}
+.dots i:nth-child(2){animation-delay:.16s} .dots i:nth-child(3){animation-delay:.32s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-6px);opacity:1}}
+.stagelab{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-left:9px}
+.shimmer{height:13px;border-radius:7px;margin-top:9px;background:linear-gradient(90deg,var(--raise) 25%,var(--ln) 50%,var(--raise) 75%);
+  background-size:400% 100%;animation:sh 1.3s linear infinite}
+.shimmer.s2{width:70%} @keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.mtools{display:flex;gap:7px}
+.player{display:flex;align-items:center;gap:8px;background:var(--sig);border:2px solid var(--sig);border-radius:20px;
+  padding:4px 12px 4px 9px;cursor:pointer}
+.player .ic{font-size:11px;color:var(--ink);line-height:1}
+.player .plab{font-family:"Space Mono",monospace;font-size:10px;font-weight:700;color:var(--ink);white-space:nowrap}
+.player canvas{width:90px;height:20px;display:none}
+.player.playing canvas{display:block} .player.playing .plab{display:none}
+
+/* composer */
+.composer{border-top:var(--bd);background:var(--surf);padding:14px 20px;flex:0 0 auto}
+.cbar{display:flex;gap:12px;align-items:center}
+.mic{width:62px;flex:0 0 62px;height:62px;border-radius:50%;background:var(--raise);color:var(--fg);
+  border:2px solid var(--ln);font-family:"Space Mono",monospace;font-size:11px;font-weight:700;cursor:pointer}
+.mic:hover{transform:translate(-2px,-2px)}
+.mic.rec{background:var(--reject);border-color:var(--reject);color:#fff;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 12px rgba(180,24,45,.18)}}
+.cin{flex:1;min-width:0;font-size:15px;font-weight:500;background:var(--void);color:var(--fg);
+  border:2px solid var(--ln);border-radius:32px;padding:16px 20px;outline:none}
+.cin:focus{border-color:var(--sig)}
+.send{background:var(--sig);color:var(--ink);border:2px solid var(--sig);border-radius:32px;padding:0 24px;height:52px;
+  font-weight:700;font-size:15px;cursor:pointer}
+.livebar{display:none;flex:1;min-width:0;align-items:center;gap:12px;background:var(--void);
+  border:2px solid var(--sig);border-radius:32px;padding:11px 18px}
+.cbar.live .livebar{display:flex} .cbar.live .cin,.cbar.live .send{display:none}
+.livewave{flex:1;min-width:0;height:32px;display:block}
+.livestate{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.livetime{font-family:"Space Mono",monospace;font-size:14px;font-weight:700;color:var(--sig)}
+.livebar.hot{border-color:var(--sun)} .livebar.hot .livestate{color:var(--sun)}
+.livebar.cut .livestate{color:var(--sig)}
+.endbtn{display:none;flex:0 0 58px;width:58px;height:58px;border-radius:50%;background:var(--reject);border:2px solid var(--reject);
+  color:#fff;font-family:"Space Mono",monospace;font-size:10px;font-weight:700;cursor:pointer}
+.cbar.live .endbtn{display:block}
+.heard{margin-top:10px;font-family:"Space Mono",monospace;font-size:13px;color:var(--sig);min-height:18px}
+.heard:empty{display:none} .heard .cur{opacity:.55}
+.hint{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ex{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;background:transparent;color:var(--mut);
+  border:2px solid var(--ln);border-radius:9px;padding:6px 10px;cursor:pointer}
+.ex:hover{color:var(--ink);background:var(--sun);border-color:var(--sun)}
+
+/* note rail */
+.nrow{margin-bottom:14px}
+.nlab{font-family:"Space Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.nval{font-size:14.5px;font-weight:600;line-height:1.4}
+.rfx{font-size:13.5px;font-weight:600;color:var(--reject);border-left:3px solid var(--reject);padding-left:9px;margin-bottom:5px}
+.qq{font-size:13.5px;font-weight:500;line-height:1.45;margin-left:16px;margin-bottom:4px}
+.err{color:var(--reject);font-size:12.5px;font-weight:600;margin-top:8px;min-height:16px}
+@media(max-width:1100px){main{grid-template-columns:210px 1fr}.rail{display:none}}
+@media(max-width:760px){main{grid-template-columns:1fr}aside{display:none}.msg{max-width:92%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot" id="live"></span>Davaa <i>Sach</i> · Clinic</div>
+  <div class="pair">
+    <span class="tag pat">Patient</span><select id="ifrom" class="pill"></select>
+    <span class="swap" id="iswap" title="Swap">&#8646;</span>
+    <span class="tag doc">Doctor</span><select id="ito" class="pill"></select>
+    <button class="ghost" id="i-copy">Copy visit</button>
+    <button class="ghost" id="i-del">Delete visit</button>
+    <a class="ghost" href="/" style="text-decoration:none;display:inline-block">All tools</a>
+  </div>
+</header>
+
+<main>
+  <aside>
+    <div class="colhead"><span>History</span><span id="vcount" class="tag"></span></div>
+    <div class="hwrap"><button class="newbtn" id="newvisit">+ New visit</button></div>
+    <div class="scroll" id="vlist"></div>
+  </aside>
+
+  <div class="mid">
+    <div class="thread" id="ithread"></div>
+    <div class="composer">
+      <div class="cbar" id="cbar">
+        <button class="mic" id="mic4" title="Start the visit — the mic stays open">START</button>
+        <input class="cin" id="int" placeholder="or type what was just said" />
+        <div class="livebar" id="livebar">
+          <canvas class="livewave" id="livewave"></canvas>
+          <span class="livestate" id="livestate">listening</span>
+          <span class="livetime" id="livetime">00:00</span>
+        </div>
+        <button class="send" id="go4">Send</button>
+        <button class="endbtn" id="stop4" title="End the visit">END</button>
+      </div>
+      <div class="heard" id="heard"></div>
+      <div class="heard" id="detected" style="color:var(--mut)"></div>
+      <div class="hint">
+        <span class="tag">try</span>
+        <button class="ex">Do din se pet me tez dard hai aur ulti ho rahi hai</button>
+        <button class="ex">Chaati me jalan hoti hai raat ko, do hafte se</button>
+      </div>
+      <div class="err" id="e4"></div>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="colhead"><span>Consultation note</span><span class="tag" id="ncount"></span></div>
+    <div class="scroll" id="note"></div>
+  </div>
+</main>
+
+<script src="/clinic.js"></script>
+</body>
+</html>
