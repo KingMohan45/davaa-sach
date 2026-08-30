@@ -189,6 +189,20 @@ async function sarvamTranslate(input, target) {
   return (await r.json()).translated_text;
 }
 
+async function sarvamTransliterate(input, target) {
+  const r = await fetch(`${SARVAM}/transliterate`, { method: "POST", headers: sarvamHeaders(), body: JSON.stringify({ input, source_language_code: "en-IN", target_language_code: target }) });
+  if (!r.ok) throw new Error(`sarvam transliterate ${r.status}`);
+  return (await r.json()).transliterated_text;
+}
+
+// Latin letters carrying a non-English language = romanized input the translator cannot read.
+const looksLatin = (t) => !/[\u0900-\u0DFF]/.test(String(t)) && /[a-z]/i.test(String(t));
+async function toNativeScript(text, lang) {
+  if (lang === "en-IN" || !looksLatin(text)) return text;
+  try { return await sarvamTransliterate(text, lang); }
+  catch (e) { console.error("transliterate skipped:", e.message); return text; }
+}
+
 async function sarvamTranslateTo(input, source, target) {
   if (!input || source === target) return input;
   const r = await fetch(`${SARVAM}/translate`, { method: "POST", headers: sarvamHeaders(), body: JSON.stringify({ input, source_language_code: source, target_language_code: target, model: "sarvam-translate:v1" }) });
@@ -266,7 +280,7 @@ app.post("/api/check", async (req, res) => {
     const raw = await sarvamChat([
       { role: "system", content: 'You check Indian medicines against CDSCO regulator alerts. Reply ONLY minified JSON: {"verdict":"flagged"|"clear"|"unknown","reason":"<=40 words, cite which source","priceNote":"<=25 words generic price info or empty","speak":"<=45 words, spoken aloud to a 62-year-old parent holding the medicine strip in a pharmacy queue, who is worried and cannot read English. Calm, unhurried, no jargon, no numbers read as digits. Lead with the answer."}. "flagged" only if evidence names this drug in an NSQ/spurious list. "unknown" if evidence is thin.' },
       { role: "user", content: `Medicine: ${drug}\n\nEVIDENCE:\n${context || "(no evidence retrieved)"}` },
-    ]);
+    ], 3000, "sarvam-105b-conversations");
     let card = extractJson(raw);
     if (!card || !["flagged", "clear", "unknown"].includes(card.verdict)) {
       console.error("verdict unparseable, raw head:", String(raw).slice(0, 160));
@@ -384,41 +398,93 @@ app.post("/api/prescription", async (req, res) => {
   } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
 });
 
+// ============ USE CASE 5: live duplex consultation ============
+// Both parties keep talking. Every utterance is transcribed with auto language detection,
+// appended to a running transcript, and spoken to the other party in their language. After each
+// PATIENT turn the whole transcript so far is re-read into a clinical note plus candidate
+// medication classes, and every candidate is checked against the cached WHO alert index.
+app.post("/api/consult", async (req, res) => {
+  const { text: rawText, toLang = "en-IN", fromLang = "hi-IN", speaker = "patient", transcript = [] } = req.body || {};
+  if (!rawText) return res.status(400).json({ error: "text required" });
+  const T0 = Date.now(); const timings = {};
+  try {
+    // A) translate for the other party, and speak it
+    const tTr = Date.now();
+    const text = await toNativeScript(rawText, fromLang);
+    const enPivot = fromLang === "en-IN" ? Promise.resolve(text) : sarvamTranslateTo(text, fromLang, "en-IN");
+    const translateP = (async () => {
+      const en = await enPivot; // shared, so the pivot is computed exactly once per turn
+      const out = toLang === "en-IN" ? en : (fromLang === toLang ? text : await sarvamTranslate(en, toLang));
+      let audio = null;
+      try { audio = await sarvamTTS(out, toLang); } catch (e) { console.error("tts skipped:", e.message); }
+      return { out, en, audio };
+    })();
+
+    // B) re-read the WHOLE conversation into a note. Only worth doing on a patient turn.
+    const notePromise = speaker !== "patient" ? Promise.resolve(null) : (async () => {
+      const thisEn = await enPivot; // English pivot of the current turn
+      const convo = [...transcript, { speaker, text, en: thisEn }]
+        .map((t) => `${t.speaker === "patient" ? "PATIENT" : "DOCTOR"}: ${t.en || t.text}`)
+        .join("\n").slice(0, 6000);
+      const raw = await sarvamChat([
+        { role: "system", content: 'You keep a live consultation note for a doctor while a patient talks. You are given the whole conversation so far and must RE-READ ALL OF IT each time, not just the last line. Reply ONLY minified JSON: {"complaint":"<=16 words, chief complaint in clinical English","duration":"<=6 words or empty","negatives":["relevant thing the patient has DENIED or that is absent", ...],"redFlags":["finding needing urgent care", ...],"suggestions":[{"name":"GENERIC drug or class, never a brand, never a dose","whatFor":"<=12 words","caution":"<=14 words or empty"}],"askBack":["<=12 word question the doctor should ask next", ...up to 3]}. Suggestions are candidates for the DOCTOR to consider, at most 4, and must be plausible for the stated complaint. Never state a dose. If the complaint is still too vague to suggest anything, return an empty suggestions array and put the missing information in askBack.' },
+        { role: "user", content: convo },
+      ], 2500, "sarvam-105b-conversations");
+      return extractJson(raw);
+    })();
+
+    const [tr, note] = await Promise.all([translateP, notePromise]);
+    timings.turn = Date.now() - tTr;
+
+    // C) safety pass on the suggestions, against the WHO index we already hold cached
+    let flagged = [];
+    if (note && Array.isArray(note.suggestions) && note.suggestions.length) {
+      const whoMd = await whoAlertIndex();
+      flagged = note.suggestions
+        .map((sg) => ({ name: sg.name, who: whoLinesFor(whoMd, sg.name) }))
+        .filter((x) => x.who.length);
+    }
+    timings.total = Date.now() - T0;
+    res.json({ speaker, original: text, fromLang, toLang, translated: tr.out, en: tr.en, audioBase64: tr.audio, note, flagged, timings });
+  } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
+});
+
 // ============ USE CASE 4: consultation interpreter ============
 // A migrant patient and a doctor with no shared language, which is the ordinary case in any
 // Indian tertiary hospital. Translate the utterance BOTH ways and, when the patient is speaking,
 // surface the clinical content so the doctor does not have to reconstruct it from a translation.
 app.post("/api/interpret", async (req, res) => {
-  const { text, from = "hi-IN", to = "kn-IN", speaker = "patient" } = req.body || {};
-  if (!text) return res.status(400).json({ error: "text required" });
+  const { text: rawText, from = "hi-IN", to = "kn-IN", speaker = "patient" } = req.body || {};
+  if (!rawText) return res.status(400).json({ error: "text required" });
   const T0 = Date.now(); const timings = {};
   try {
     const tTr = Date.now();
-    // Translate via English when the pair is not English: sarvam-translate is en<->indic.
-    let translated;
-    if (from === to) translated = text;
-    else if (from === "en-IN") translated = await sarvamTranslate(text, to);
-    else {
-      const en = await sarvamTranslateTo(text, from, "en-IN");
-      translated = to === "en-IN" ? en : await sarvamTranslate(en, to);
-    }
-    timings.translate = Date.now() - tTr;
+    const text = await toNativeScript(rawText, from);
+    // One English pivot, shared. Then the OUTPUT chain (translate -> speak) and the CLINICAL read
+    // are independent, so they run concurrently instead of one after the other.
+    const en = from === "en-IN" ? text : await sarvamTranslateTo(text, from, "en-IN");
+    timings.pivot = Date.now() - tTr;
+
+    const tOut = Date.now();
+    const speakChain = (async () => {
+      const translated = to === "en-IN" ? en : (from === to ? text : await sarvamTranslate(en, to));
+      let audio = null;
+      try { audio = await sarvamTTS(translated, to); } catch (e) { console.error("tts skipped:", e.message); }
+      return { translated, audio };
+    })();
 
     // Only the patient's turn needs clinical structuring; the doctor's turn is an instruction.
-    let clinical = null;
-    if (speaker === "patient") {
-      const tC = Date.now();
+    const clinicalP = speaker !== "patient" ? Promise.resolve(null) : (async () => {
       const raw = await sarvamChat([
         { role: "system", content: 'You help a doctor understand a patient who does not share their language. Reply ONLY minified JSON: {"complaint":"<=14 words chief complaint in clinical English","duration":"<=6 words or empty","redFlags":["urgent finding", ...],"askBack":["<=12 word follow-up question the doctor should ask, phrased for the patient", ...up to 3]}. Never diagnose and never name a medicine.' },
-        { role: "user", content: `Patient said (already translated to English): "${text}"` },
+        { role: "user", content: `Patient said (translated to English): "${en}"` },
       ], 1500, "sarvam-105b-conversations");
-      clinical = extractJson(raw);
-      timings.clinical = Date.now() - tC;
-    }
-    const tV = Date.now();
-    let audioBase64 = null;
-    try { audioBase64 = await sarvamTTS(translated, to); } catch (e) { console.error("tts skipped:", e.message); }
-    timings.voice = Date.now() - tV; timings.total = Date.now() - T0;
+      return extractJson(raw);
+    })();
+
+    const [out, clinical] = await Promise.all([speakChain, clinicalP]);
+    const translated = out.translated, audioBase64 = out.audio;
+    timings.outAndClinical = Date.now() - tOut; timings.total = Date.now() - T0;
     res.json({ original: text, translated, from, to, speaker, clinical, audioBase64, timings });
   } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
 });

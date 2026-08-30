@@ -227,8 +227,8 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
 .cine.playing .credit{animation:fadeIn .5s linear 8.5s both}
 
 /* ---------------- blister wall ---------------- */
-.blister{display:grid;grid-template-columns:repeat(20,1fr);gap:7px;margin-top:8px}
-@media (max-width:900px){.blister{grid-template-columns:repeat(12,1fr)}}
+.blister{display:grid;grid-template-columns:repeat(25,1fr);gap:6px;margin-top:6px;max-width:1000px}
+@media (max-width:900px){.blister{grid-template-columns:repeat(13,1fr)}}
 .pk{aspect-ratio:.66;border-radius:40% 40% 44% 44%/32% 32% 40% 40%;
   background:linear-gradient(160deg,rgba(245,241,232,.16),rgba(245,241,232,.05));
   border:1px solid rgba(245,241,232,.10);opacity:0;transform:scale(.5)}
@@ -241,7 +241,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
   border-color:#FF6B75;box-shadow:0 0 22px rgba(255,45,59,.75);transform:scale(1.16)}}
 
 /* ---------------- verdict cards + stamp ---------------- */
-.vcard{position:relative;border-radius:var(--radl);padding:26px;overflow:hidden;
+.vcard{position:relative;border-radius:var(--radl);padding:26px 26px 98px;overflow:hidden;
   border:1px solid var(--line);background:linear-gradient(180deg,var(--surf),var(--ink2));box-shadow:var(--sh)}
 .vcard.red{border-color:rgba(255,45,59,.42);background:linear-gradient(180deg,var(--redd),#150407)}
 .vcard.grn{border-color:rgba(0,226,122,.38);background:linear-gradient(180deg,var(--grnd),#03130C)}
@@ -253,18 +253,25 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
 .vcard.grn .vbadge{background:var(--grn);color:#04120B}
 .vreason{font-size:14.5px;line-height:1.55;color:#C8C3B8;margin-top:16px}
 .vloc{font-family:var(--kan);font-size:17px;margin-top:12px;color:#E4DFD4}
-.stamp{position:absolute;right:16px;bottom:14px;z-index:4;font-family:var(--mono);font-weight:700;
-  font-size:clamp(13px,1.5vw,17px);letter-spacing:.06em;color:var(--red);
+.stamp{position:absolute;right:26px;bottom:16px;z-index:4;font-family:var(--mono);font-weight:700;
+  font-size:clamp(12px,1.35vw,15px);letter-spacing:.06em;color:var(--red);
   border:4px double var(--red);border-radius:9px;padding:7px 13px;opacity:0;
   transform:rotate(-15deg) scale(2.9);text-shadow:0 0 14px rgba(255,45,59,.5)}
 .slide.seen .stamp{animation:stampSlam .62s cubic-bezier(.16,1.5,.3,1) 1.1s both}
 @keyframes stampSlam{0%{opacity:0;transform:rotate(-30deg) scale(3.1);filter:blur(8px)}
   58%{opacity:1;transform:rotate(-15deg) scale(.92);filter:blur(0)}
   74%{transform:rotate(-15deg) scale(1.07)}100%{opacity:.94;transform:rotate(-15deg) scale(1)}}
-.slide.seen .vcard.red{animation:shk .34s cubic-bezier(.36,.07,.19,.97) 1.62s both}
+/* The card carries BOTH .rv and .vcard.red. `animation` is a shorthand, so this
+   rule REPLACES the riseIn animation from `.slide.seen .rv` rather than adding to
+   it -- and riseIn is the only thing that lifts `.rv{opacity:0}`, so declaring the
+   shake alone left the red verdict card permanently invisible. Declare both here.
+   The shake uses `forwards`, not `both`: with `both` its backwards fill would pin
+   transform from t=0 and cancel the rise it is supposed to follow. */
+.slide.seen .vcard.red{animation:riseIn .62s cubic-bezier(.2,.9,.3,1) calc(var(--i,0)*.075s) both,
+  shk .34s cubic-bezier(.36,.07,.19,.97) 1.62s forwards}
 @keyframes shk{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
   30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}100%{transform:none}}
-.seal{position:absolute;right:18px;bottom:16px;width:74px;height:74px;opacity:0}
+.seal{position:absolute;right:24px;bottom:12px;width:62px;height:62px;opacity:0}
 .slide.seen .seal{animation:fadeIn .3s linear 1.15s both}
 .seal circle,.seal path{stroke:var(--grn);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .seal circle{stroke-dasharray:210;stroke-dashoffset:210}
@@ -316,10 +323,10 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
    portrait file is missing the card falls back to a monogram -- a broken-image
    icon on the closing slide of a pitch is not an acceptable failure mode. */
 #s17{background:var(--deep);background-image:none}
-.crew{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:34px}
+.crew{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:26px}
 @media (max-width:940px){.crew{grid-template-columns:repeat(2,1fr)}}
 .mate{text-align:center}
-.port{position:relative;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;
+.port{position:relative;width:100%;max-width:178px;margin:0 auto;aspect-ratio:1;border-radius:18px;overflow:hidden;
   background:linear-gradient(180deg,var(--surf),var(--ink2));border:1px solid var(--line);
   box-shadow:var(--sh);transition:transform .35s cubic-bezier(.2,.9,.3,1),box-shadow .35s,border-color .35s}
 .mate:hover .port{transform:translateY(-6px) scale(1.02);box-shadow:var(--shl);border-color:rgba(0,226,122,.45)}
@@ -341,16 +348,39 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
 .mate .name{font-family:var(--serif);font-size:clamp(19px,2.1vw,27px);line-height:1.15;
   letter-spacing:-.015em;margin-top:5px}
 /* the roll: a real film-credit crawl, masked top and bottom */
-.roll{height:132px;overflow:hidden;position:relative;margin-top:30px;
+.roll{height:96px;overflow:hidden;position:relative;margin-top:30px;
   -webkit-mask-image:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);
   mask-image:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent)}
 .roll ul{list-style:none;position:absolute;left:0;right:0;top:0}
 .slide.seen .roll ul{animation:crawl 26s linear infinite}
-@keyframes crawl{from{transform:translateY(132px)}to{transform:translateY(-100%)}}
+@keyframes crawl{from{transform:translateY(96px)}to{transform:translateY(-100%)}}
 .roll li{display:flex;justify-content:center;gap:16px;padding:5px 0;font-size:13.5px}
 .roll li span{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;
   text-transform:uppercase;color:var(--dim);min-width:190px;text-align:right}
 .roll li b{font-weight:600;color:#C8C3B8;min-width:190px;text-align:left}
+/* Short-viewport density pass. .slide is min-height:100vh + overflow:hidden, so a
+   slide taller than the viewport is CLIPPED, not scrollable -- the bottom of it
+   simply never appears during the talk. This also covers the 1280x720 the PDF
+   export renders at, which is shorter than most laptop screens. */
+@media (max-height:800px){
+  .slide{padding:66px 28px 46px}
+  h2{font-size:clamp(28px,4.2vw,52px);margin-bottom:10px}
+  p.lead{font-size:clamp(15px,1.55vw,18px);line-height:1.45;margin-top:10px}
+  .card{padding:17px} .card p{font-size:13.5px;line-height:1.45}
+  .card h3,h3{font-size:16.5px}
+  .grid{gap:13px} .pillrow{margin-top:18px} .row{margin-top:10px}
+  .pill{padding:7px 14px;font-size:12.5px}
+  .ico{width:29px;height:29px;font-size:14px;margin-bottom:9px}
+  ul.tk li{font-size:13.5px;margin:7px 0}
+  pre.code{font-size:11.5px;line-height:1.6;padding:13px 15px;margin-top:12px}
+  .pipe{margin-top:20px;gap:8px} .pnode{padding:12px 10px}
+  .stat{padding:17px 14px} .hair{margin:20px 0}
+  .eyebrow{margin-bottom:14px}
+  .src{padding:9px 0} .src .sd{font-size:12.5px}
+  .vcard{padding:21px 21px 88px} .vreason{font-size:13.5px;margin-top:12px}
+  .port{max-width:150px} .roll{height:84px} .crew{margin-top:20px}
+  @keyframes crawl{from{transform:translateY(84px)}to{transform:translateY(-100%)}}
+}
 @media (prefers-reduced-motion:reduce){
   *,*:before,*:after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
   .slide .rv,.pk,.stamp,.seal,.act2,.title,.titlesub,.tagline,.xtract,.subline,.credit{opacity:1!important;transform:none!important}
@@ -419,7 +449,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
 <section class="slide" id="s2">
   <div class="wrap">
     <div class="eyebrow rv" style="--i:0">the problem, as a picture</div>
-    <h2 class="rv" style="--i:1">One of these will hurt you.<br><em>Which one?</em></h2>
+    <h2 class="rv" style="--i:1;font-size:clamp(30px,4.4vw,58px)">One of these will hurt you.<br><em>Which one?</em></h2>
     <div class="blister rv" id="blister" style="--i:2"></div>
     <p class="lead rv" style="--i:3">You cannot tell by looking. Neither can the pharmacist, and neither can the person paying for it. <b>India&rsquo;s drug regulator can</b> &mdash; CDSCO names substandard and spurious medicines every single month.</p>
     <div class="pillrow rv" style="--i:4">
@@ -829,7 +859,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
   <div class="glow" style="position:absolute;inset:0;background:radial-gradient(58% 52% at 50% 42%,rgba(0,226,122,.10),transparent 72%)"></div>
   <div class="wrap" style="text-align:center">
     <div class="eyebrow rv" style="--i:0;justify-content:center">end credits</div>
-    <h2 class="foil rv" style="--i:1">Built by four people, in one room.</h2>
+    <h2 class="foil rv" style="--i:1;font-size:clamp(30px,4.4vw,58px)">Built by four people, in one room.</h2>
 
     <!-- To change a name or add a role, edit ONLY these four blocks.
          Portraits: drop the originals in team/src/ and run team/make-team.sh -->
@@ -872,9 +902,8 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
       </ul>
     </div>
 
-    <p class="lead rv" style="--i:7;margin:24px auto 0;text-align:center;font-size:16px">
+    <p class="lead rv" style="--i:7;margin:18px auto 0;text-align:center;font-size:16px">
       Ninety minutes, one pipeline, five live sources. <b>Thank you for watching.</b></p>
-    <h1 class="foil rv" style="--i:8;margin-top:22px;font-size:clamp(40px,7vw,96px)">Davaa Sach</h1>
   </div>
 </section>
 

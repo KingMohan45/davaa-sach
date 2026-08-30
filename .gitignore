@@ -5,6 +5,5 @@ app/cache/
 *.wav
 .DS_Store
 app/public/deck/team/facecrop
-.claude/
-research/
-CLAUDE.md
+.claude/settings.local.json
+*.log
