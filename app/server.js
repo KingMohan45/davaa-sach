@@ -287,9 +287,13 @@ async function sarvamTTS(text, language_code) {
 // Voice in: { audioBase64, mime } -> { transcript, detectedLang }
 app.post("/api/stt", async (req, res) => {
   try {
-    const { audioBase64, mime = "audio/webm" } = req.body || {};
+    const { audioBase64, mime = "audio/webm", fast } = req.body || {};
     if (!audioBase64) return res.status(400).json({ error: "audioBase64 required" });
     const out = await sarvamSTT(Buffer.from(audioBase64, "base64"), mime);
+    // `fast` is the interim pass the mic fires WHILE the person is still speaking. It must never
+    // pay for the drug-name extraction, which is an LLM round trip and would make each partial
+    // land after the next one was already due.
+    if (fast) return res.json({ transcript: out.transcript, drugLatin: out.transcript, detectedLang: out.language_code, partial: true });
     // codemix STT returns native script ("Dolo 650" -> Devanagari, numbers as words) — extract Latin drug name for web search
     let drugLatin = out.transcript;
     try {
@@ -553,6 +557,50 @@ app.post("/api/interpret", async (req, res) => {
     timings.outAndClinical = Date.now() - tOut; timings.total = Date.now() - T0;
     res.json({ original: text, translated, from, to, speaker, clinical, audioBase64, timings });
   } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
+});
+
+// Same pipeline as /api/interpret, streamed. The point is that the doctor should not stare at a
+// spinner while the audio renders: the native-script text lands first, the translation next, the
+// clinical read and the voice whenever they finish. Each stage is painted the moment it exists.
+// EventSource is a GET, which is why the turn arrives as query params.
+app.get("/api/interpret/stream", async (req, res) => {
+  const { text: rawText, from = "hi-IN", to = "kn-IN", speaker = "patient" } = req.query || {};
+  res.set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", "X-Accel-Buffering": "no" });
+  res.flushHeaders && res.flushHeaders();
+  const T0 = Date.now();
+  const send = (event, data) => { res.write(`event: ${event}\ndata: ${JSON.stringify({ ...data, at: Date.now() - T0 })}\n\n`); };
+  if (!rawText) { send("error", { error: "text required" }); return res.end(); }
+  try {
+    const text = await toNativeScript(rawText, from);
+    send("script", { original: text });
+
+    const speakChain = (async () => {
+      const translated = from === to ? text : await sarvamTranslateTo(text, from, to);
+      send("translated", { translated });
+      let audio = null;
+      try { audio = await sarvamTTS(translated, to); } catch (e) { console.error("tts skipped:", e.message); }
+      if (audio) send("audio", { audioBase64: audio });
+      else send("audio", { audioBase64: null, error: "voice unavailable" });
+      return translated;
+    })();
+
+    const clinicalP = speaker !== "patient" ? Promise.resolve(null) : (async () => {
+      const en = from === "en-IN" ? text : await sarvamTranslateTo(text, from, "en-IN");
+      const raw = await sarvamChat([
+        { role: "system", content: 'You help a doctor understand a patient who does not share their language. Reply ONLY minified JSON: {"complaint":"<=14 words chief complaint in clinical English","duration":"<=6 words or empty","redFlags":["urgent finding", ...],"askBack":["<=12 word follow-up question the doctor should ask, phrased for the patient", ...up to 3]}. Never diagnose and never name a medicine.' },
+        { role: "user", content: `Patient said: "${en}"` },
+      ], 1500, "sarvam-105b-conversations");
+      const cl = extractJson(raw);
+      send("clinical", { clinical: cl });
+      return cl;
+    })();
+
+    await Promise.all([speakChain, clinicalP.catch((e) => { console.error("clinical skipped:", e.message); send("clinical", { clinical: null }); })]);
+    send("done", { total: Date.now() - T0 });
+  } catch (e) {
+    send("error", { error: String(e.message || e) });
+  }
+  res.end();
 });
 
 // ============ USE CASE 3: symptoms -> what is commonly used, and what to ask ============

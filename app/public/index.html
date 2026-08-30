@@ -244,6 +244,54 @@ audio{width:100%;margin-top:14px;border-radius:10px}
 .cin:focus{border-color:var(--sig)}
 .go.send{border-radius:32px;padding:0 24px}
 @media(max-width:640px){.msg{max-width:92%}.thread{padding:13px}}
+/* ---------- live recording bar, loaders, playback ---------- */
+.cbar.live .cin,.cbar.live .go.send{display:none}
+.livebar{display:none;flex:1;min-width:0;align-items:center;gap:12px;background:var(--void);
+  border:2px solid var(--sig);border-radius:32px;padding:11px 18px}
+.cbar.live .livebar{display:flex}
+.livewave{flex:1;min-width:0;height:34px;display:block}
+.livetime{font-family:"Space Mono",monospace;font-size:14px;font-weight:700;color:var(--sig);letter-spacing:.05em}
+.stopbtn{display:none;flex:0 0 60px;width:60px;height:60px;border-radius:50%;background:var(--reject);
+  border:2px solid var(--reject);color:#fff;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;
+  cursor:pointer;box-shadow:5px 5px 0 var(--void)}
+.cbar.live .stopbtn{display:block}
+.stopbtn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--void)}
+.heard{margin-top:11px;font-size:14px;font-weight:500;color:var(--sig);min-height:20px;
+  font-family:"Space Mono",monospace;letter-spacing:.01em}
+.heard:empty{display:none}
+.heard .cur{opacity:.55}
+
+/* the pending bubble: a real loader, not the word "translating" */
+.dots{display:inline-flex;gap:5px;align-items:center;height:14px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--sig);display:block;animation:bounce 1.05s infinite}
+.dots i:nth-child(2){animation-delay:.16s} .dots i:nth-child(3){animation-delay:.32s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-6px);opacity:1}}
+.stagelab{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mut);margin-left:9px}
+.loading{margin-top:9px;padding-top:9px;border-top:1px dashed var(--ln);display:flex;align-items:center}
+.shimmer{height:13px;border-radius:7px;margin-top:9px;
+  background:linear-gradient(90deg,var(--raise) 25%,var(--ln) 50%,var(--raise) 75%);
+  background-size:400% 100%;animation:sh 1.3s linear infinite}
+.shimmer.s2{width:72%} @keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* playback: the button becomes the waveform, with a playhead */
+.player{display:flex;align-items:center;gap:9px;background:var(--sig);border:2px solid var(--sig);
+  border-radius:22px;padding:5px 13px 5px 10px;cursor:pointer;box-shadow:3px 3px 0 var(--void)}
+.player:hover{transform:translate(-1px,-1px)}
+.player .ic{font-size:12px;color:var(--ink);line-height:1}
+.player .plab{font-family:"Space Mono",monospace;font-size:10px;font-weight:700;color:var(--ink);white-space:nowrap}
+.player canvas{width:96px;height:22px;display:none}
+.player.playing canvas{display:block}
+.player.playing .plab{display:none}
+.livestate{font-family:"Space Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.livebar.hot{border-color:var(--sun)} .livebar.hot .livestate{color:var(--sun)}
+.livebar.cut .livestate{color:var(--sig)}
+.mic.round.rec{animation:pulse 1.4s ease-in-out infinite}
+.sessline{display:flex;align-items:center;gap:10px;margin:4px 0}
+.sessline::before,.sessline::after{content:"";flex:1;height:2px;background:var(--ln)}
+.sessline span{font-family:"Space Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -398,14 +446,21 @@ audio{width:100%;margin-top:14px;border-radius:10px}
         <div class="turnpill">
           <button class="pill on" id="sp-pat" data-s="patient">Patient speaks</button>
           <button class="pill" id="sp-doc" data-s="doctor">Doctor speaks</button>
-          <span class="exlab autosw"><input type="checkbox" id="iauto" checked /> hand the mic over after each turn</span>
+          <span class="exlab autosw"><input type="checkbox" id="iauto" checked /> pick the speaker from the language I hear</span>
         </div>
-        <div class="cbar">
-          <button class="mic round" id="mic4" title="Tap to speak, tap again to stop">MIC</button>
+        <div class="cbar" id="cbar">
+          <button class="mic round" id="mic4" title="Start the visit — the mic stays open">START</button>
           <input class="cin" id="int" placeholder="or type what was just said" />
+          <div class="livebar" id="livebar">
+            <canvas class="livewave" id="livewave"></canvas>
+            <span class="livestate" id="livestate">listening</span>
+            <span class="livetime" id="livetime">00:00</span>
+          </div>
           <button class="go send" id="go4">Send</button>
+          <button class="stopbtn" id="stop4" title="End the visit">END</button>
         </div>
-        <canvas class="wave" id="wave4"></canvas>
+        <div class="heard" id="heard"></div>
+        <canvas class="wave" id="wave4" hidden></canvas>
         <div class="exrow"><span class="exlab">try</span>
           <button class="ex">Do din se pet me tez dard hai aur ulti ho rahi hai, khana nahi ja raha</button>
           <button class="ex">Chaati me jalan hoti hai raat ko, do hafte se</button>
@@ -677,7 +732,8 @@ const MICS = [
   { btn: "mic1", wave: "wave1", field: "q",   step: "c-stt", pipeId: "pipe1", steps: C, err: "e1", go: check },
   { btn: "mic2", wave: "wave2", field: "rx",  step: "x-stt", pipeId: "pipe2", steps: X, err: "e2", go: review },
   { btn: "mic3", wave: "wave3", field: "sym", step: "y-stt", pipeId: "pipe3", steps: Y, err: "e3", go: symptoms },
-  { btn: "mic4", wave: "wave4", field: "int", step: "i-stt", pipeId: "pipe4", steps: I, err: "e4", go: interpret },
+  // mic4 is NOT here: the interpreter records with a live waveform, a running clock and interim
+  // transcripts while the person is still talking, so it owns its own recorder (see tab 4).
   // mic5 is special: it auto-detects the spoken language and drives the duplex console, so it
   // bypasses the field/pipeline shape the other four share.
   { btn: "mic5", wave: "wave5", field: null, step: null, pipeId: null, steps: [], err: "e5", go: null, console: true },
@@ -730,13 +786,12 @@ for (const m of MICS) {
   };
 }
 
-/* ---------- TAB 4: interpreter (persistent chat thread, mic-first) ---------- */
+/* ---------- TAB 4: interpreter (streaming chat, live mic, animated playback) ---------- */
 const LANGS = [["hi-IN","हिन्दी Hindi"],["kn-IN","ಕನ್ನಡ Kannada"],["te-IN","తెలుగు Telugu"],["ta-IN","தமிழ் Tamil"],["en-IN","English"],["bn-IN","বাংলা Bengali"],["mr-IN","मराठी Marathi"],["gu-IN","ગુજરાતી Gujarati"],["ml-IN","മലയാളം Malayalam"],["od-IN","ଓଡ଼ିଆ Odia"],["pa-IN","ਪੰਜਾਬੀ Punjabi"]];
 const IKEY = "davaa.interpret.v2";
 const LNAME = Object.fromEntries(LANGS);
-// Audio is megabytes of base64 — it lives in memory only, never in localStorage.
-const iaudio = new Map();
-let iturns = [];        // [{id, speaker, from, to, original, translated, clinical}]
+const iaudio = new Map();   // id -> base64. Audio never goes to localStorage: it is megabytes.
+let iturns = [];
 let speaker = "patient";
 
 for (const [sel, def] of [["ifrom","hi-IN"],["ito","kn-IN"]]) {
@@ -757,7 +812,7 @@ function setSpeaker(w) {
 $("iswap").onclick = () => { const a = $("ifrom").value; $("ifrom").value = $("ito").value; $("ito").value = a; };
 $("i-clear").onclick = () => { iturns = []; iaudio.clear(); saveI(); paintThread(); };
 $("i-copy").onclick = async () => {
-  const txt = iturns.map((t) => `${t.speaker === "patient" ? "Patient" : "Doctor"} (${LNAME[t.from] || t.from}): ${t.original}\n  -> ${t.translated || ""}`).join("\n\n");
+  const txt = iturns.map((t) => t.sess ? `\n--- ${t.label} ---` : `${t.speaker === "patient" ? "Patient" : "Doctor"} (${LNAME[t.from] || t.from}): ${t.original}\n  -> ${t.translated || ""}`).join("\n\n");
   try { await navigator.clipboard.writeText(txt || ""); $("i-copy").textContent = "Copied"; setTimeout(() => ($("i-copy").textContent = "Copy transcript"), 1400); }
   catch (e) { $("e4").textContent = "Clipboard blocked by the browser."; }
 };
@@ -768,14 +823,80 @@ document.querySelectorAll("#p-int .ex").forEach((e) => {
 $("go4").onclick = () => interpret();
 $("int").addEventListener("keydown", (e) => { if (e.key === "Enter") interpret(); });
 
-function saveI() {
-  // Persist the conversation, not the audio, so a reload keeps the whole visit.
-  try { localStorage.setItem(IKEY, JSON.stringify(iturns.slice(-60))); } catch (e) {}
+function saveI() { try { localStorage.setItem(IKEY, JSON.stringify(iturns.slice(-60))); } catch (e) {} }
+function loadI() { try { const r = localStorage.getItem(IKEY); if (r) iturns = JSON.parse(r) || []; } catch (e) { iturns = []; } }
+
+/* ---- scrolling bar meter: one bar per sample, newest on the right ---- */
+function barMeter(canvas, getLevel, opts) {
+  const o = opts || {};
+  const col = o.color || "#CEFF32", gap = 3, w = o.barW || 3;
+  const hist = [];
+  let raf = null, live = true;
+  (function loop() {
+    raf = requestAnimationFrame(loop);
+    const W = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const H = canvas.height = canvas.clientHeight * devicePixelRatio;
+    if (!W || !H) return;
+    const g = canvas.getContext("2d");
+    const step = (w + gap) * devicePixelRatio, n = Math.floor(W / step);
+    if (live) { hist.push(getLevel()); while (hist.length > n) hist.shift(); }
+    g.clearRect(0, 0, W, H);
+    const prog = o.progress ? o.progress() : 1;
+    for (let i = 0; i < hist.length; i++) {
+      const x = W - (hist.length - i) * step;
+      const h = Math.max(2 * devicePixelRatio, hist[i] * H * 0.92);
+      g.fillStyle = (i / Math.max(1, hist.length)) <= prog ? col : (o.dim || "#235347");
+      g.fillRect(x, (H - h) / 2, w * devicePixelRatio, h);
+    }
+    if (o.playhead && prog < 1) {
+      g.fillStyle = o.head || "#FF5C4D";
+      g.fillRect(Math.max(0, W * prog - devicePixelRatio), 0, 2 * devicePixelRatio, H);
+    }
+  })();
+  return { stop: () => cancelAnimationFrame(raf), freeze: () => { live = false; }, hist };
 }
-function loadI() {
-  try { const r = localStorage.getItem(IKEY); if (r) iturns = JSON.parse(r) || []; } catch (e) { iturns = []; }
+function levelFrom(analyser) {
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  return () => {
+    analyser.getByteTimeDomainData(buf);
+    let peak = 0;
+    for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128) / 128);
+    return Math.min(1, peak * 1.7);
+  };
 }
 
+/* ---- playback: the button turns into its own waveform with a playhead ---- */
+let nowPlaying = null;
+function playTurn(btn, id) {
+  if (nowPlaying) { nowPlaying.pause(); nowPlaying = null; }
+  const b64 = iaudio.get(id); if (!b64) return;
+  const a = new Audio("data:audio/wav;base64," + b64);
+  nowPlaying = a;
+  const cv = btn.querySelector("canvas");
+  let ctx = null, meter = null;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const an = ctx.createAnalyser(); an.fftSize = 512;
+    const src = ctx.createMediaElementSource(a);
+    src.connect(an); an.connect(ctx.destination);
+    btn.classList.add("playing");
+    meter = barMeter(cv, levelFrom(an), { color: "#1A1A17", dim: "#7FA05A", playhead: false });
+  } catch (e) { btn.classList.add("playing"); }
+  const done = () => {
+    btn.classList.remove("playing");
+    if (meter) meter.stop();
+    if (ctx) ctx.close().catch(() => {});
+    if (nowPlaying === a) nowPlaying = null;
+  };
+  a.onended = done; a.onerror = done;
+  a.play().catch(done);
+}
+
+function sessRow(t) {
+  const d = document.createElement("div"); d.className = "sessline";
+  const sp = document.createElement("span"); sp.textContent = t.label || "new visit";
+  d.appendChild(sp); return d;
+}
 function bubble(t) {
   const wrap = document.createElement("div");
   wrap.className = "msg " + t.speaker; wrap.dataset.id = t.id;
@@ -784,16 +905,26 @@ function bubble(t) {
   const bub = document.createElement("div"); bub.className = "bub";
   const said = document.createElement("div"); said.className = "said"; said.textContent = t.original;
   bub.appendChild(said);
-  if (t.pending) {
-    const p = document.createElement("div"); p.className = "pend"; p.textContent = "translating…"; bub.appendChild(p);
-  } else if (t.error) {
+
+  if (t.error) {
     bub.classList.add("fail");
-    const p = document.createElement("div"); p.className = "pend"; p.style.color = "var(--reject)"; p.textContent = t.error; bub.appendChild(p);
+    const p = document.createElement("div"); p.className = "stagelab"; p.style.color = "var(--reject)";
+    p.style.marginLeft = "0"; p.textContent = t.error;
+    const box = document.createElement("div"); box.className = "loading"; box.appendChild(p); bub.appendChild(box);
   } else if (t.translated) {
-    const xl = document.createElement("div"); xl.className = "xl";
-    xl.textContent = t.translated;
+    const xl = document.createElement("div"); xl.className = "xl"; xl.textContent = t.translated;
     bub.appendChild(xl);
+  } else if (t.stage) {
+    // The loader IS the pipeline: it says which stage is running, not just that something is.
+    const box = document.createElement("div"); box.className = "loading";
+    const d = document.createElement("span"); d.className = "dots";
+    d.innerHTML = "<i></i><i></i><i></i>"; box.appendChild(d);
+    const lab = document.createElement("span"); lab.className = "stagelab"; lab.textContent = t.stage;
+    box.appendChild(lab); bub.appendChild(box);
+    const sh = document.createElement("div"); sh.className = "shimmer"; bub.appendChild(sh);
+    const sh2 = document.createElement("div"); sh2.className = "shimmer s2"; bub.appendChild(sh2);
   }
+
   const cl = t.clinical;
   if (cl && ((cl.redFlags || []).length || cl.complaint)) {
     const f = document.createElement("div"); f.className = "mflag";
@@ -809,10 +940,13 @@ function bubble(t) {
     a.appendChild(u); bub.appendChild(a);
   }
   wrap.appendChild(who); wrap.appendChild(bub);
+
   if (iaudio.has(t.id)) {
     const tools = document.createElement("div"); tools.className = "mtools";
-    const b = document.createElement("button"); b.className = "spk"; b.textContent = "▶ play " + (LNAME[t.to] || t.to);
-    b.onclick = () => { const a = new Audio("data:audio/wav;base64," + iaudio.get(t.id)); a.play().catch(() => {}); };
+    const b = document.createElement("button"); b.className = "player";
+    b.innerHTML = '<span class="ic">&#9654;</span><span class="plab"></span><canvas></canvas>';
+    b.querySelector(".plab").textContent = "play " + (LNAME[t.to] || t.to);
+    b.onclick = () => playTurn(b, t.id);
     tools.appendChild(b); wrap.appendChild(tools);
   }
   return wrap;
@@ -820,54 +954,235 @@ function bubble(t) {
 function paintThread(scroll) {
   const th = $("ithread");
   th.innerHTML = "";
-  if (!iturns.length) {
-    th.innerHTML = '<div class="empty">Tap the mic and speak. Each turn is translated both ways, read aloud in the listener\'s language, and kept here for the whole visit.</div>';
-  } else {
-    for (const t of iturns) th.appendChild(bubble(t));
-  }
-  $("icount").textContent = iturns.length ? iturns.length + (iturns.length === 1 ? " turn" : " turns") : "no turns yet";
+  if (!iturns.length) th.innerHTML = '<div class="empty">Tap the mic and speak. Each turn is translated both ways, read aloud in the listener\'s language, and kept here for the whole visit.</div>';
+  else for (const t of iturns) th.appendChild(t.sess ? sessRow(t) : bubble(t));
+  const n = iturns.filter((x) => !x.sess).length;
+  $("icount").textContent = n ? n + (n === 1 ? " turn" : " turns") : "no turns yet";
   if (scroll !== false) th.scrollTop = th.scrollHeight;
 }
+// Repaint one bubble in place. A full repaint on every SSE event would kill a playing waveform.
+function repaint(t) {
+  const old = $("ithread").querySelector('.msg[data-id="' + t.id + '"]');
+  if (!old) return paintThread();
+  const fresh = bubble(t);
+  old.replaceWith(fresh);
+  $("ithread").scrollTop = $("ithread").scrollHeight;
+}
 
-let iInFlight = false;
-async function interpret(spokenText) {
-  if (iInFlight) return;
+// Re-entrant on purpose. In a hands-free visit the next utterance starts before the previous
+// turn's voice has rendered, and blocking on one in-flight turn would drop speech on the floor.
+let iOpen = 0;
+function interpret(spokenText, who) {
   const text = (spokenText || $("int").value).trim(); if (!text) return;
-  iInFlight = true;
-  $("go4").disabled = true; $("e4").textContent = "";
-  const from = $("ifrom").value === $("ito").value ? $("ifrom").value : (speaker === "patient" ? $("ifrom").value : $("ito").value);
-  const to = speaker === "patient" ? $("ito").value : $("ifrom").value;
-  const turn = { id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), speaker, from, to, original: text, translated: "", clinical: null, pending: true };
+  iOpen++;
+  $("e4").textContent = ""; $("heard").textContent = "";
+  const sp = who || speaker;
+  const from = sp === "patient" ? $("ifrom").value : $("ito").value;
+  const to = sp === "patient" ? $("ito").value : $("ifrom").value;
+  const turn = { id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), speaker: sp, from, to,
+    original: text, translated: "", clinical: null, stage: "reading the script" };
   iturns.push(turn); $("int").value = ""; paintThread();
 
   pipe("pipe4", I, true);
   mark("i-stt", $("int").dataset.fromVoice === "1" ? "done" : ""); mark("i-tr", "run");
   $("pt4").textContent = "live pipeline — crossing the language";
-  const tm = setTimeout(() => mark("i-cl", "run"), 1800);
-  try {
-    const r = await fetch("/api/interpret", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, from, to, speaker: turn.speaker }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
-    clearTimeout(tm);
-    mark("i-tr", "done"); mark("i-cl", d.clinical ? "done" : ""); mark("i-vo", d.audioBase64 ? "done" : "fail");
-    const t = d.timings || {};
-    $("pt4").textContent = t.total ? `live pipeline — complete in ${(t.total / 1000).toFixed(1)}s` : "live pipeline — complete";
-    turn.pending = false;
-    turn.original = d.original || turn.original;
-    turn.translated = d.translated || "";
-    turn.clinical = d.clinical || null;
-    if (d.audioBase64) iaudio.set(turn.id, d.audioBase64);
-    saveI(); paintThread();
-    if (d.audioBase64) { const a = new Audio("data:audio/wav;base64," + d.audioBase64); a.play().catch(() => {}); }
-    if ($("iauto").checked) setSpeaker(turn.speaker === "patient" ? "doctor" : "patient");
-  } catch (e) {
-    clearTimeout(tm); I.forEach((x) => { if ($(x).className.includes("run")) mark(x, "fail"); });
+
+  // Streamed: each stage paints the instant it exists, instead of the whole turn appearing at the
+  // end. The translation lands roughly half way through the turn, so nobody waits on the voice.
+  const qs = new URLSearchParams({ text, from, to, speaker: turn.speaker });
+  const es = new EventSource("/api/interpret/stream?" + qs.toString());
+  let closed = false;
+  const finish = () => { if (closed) return; closed = true; es.close(); iOpen--; $("int").dataset.fromVoice = "0"; saveI(); };
+
+  es.addEventListener("script", (m) => {
+    const d = JSON.parse(m.data);
+    turn.original = d.original || turn.original; turn.stage = "translating";
+    repaint(turn);
+  });
+  es.addEventListener("translated", (m) => {
+    const d = JSON.parse(m.data);
+    turn.translated = d.translated || ""; turn.stage = "";
+    mark("i-tr", "done"); mark("i-cl", "run");
+    $("pt4").textContent = `live pipeline — translated in ${(d.at / 1000).toFixed(1)}s, voice on the way`;
+    repaint(turn);
+  });
+  es.addEventListener("clinical", (m) => {
+    const d = JSON.parse(m.data);
+    turn.clinical = d.clinical || null; mark("i-cl", d.clinical ? "done" : "");
+    repaint(turn); saveI();
+  });
+  es.addEventListener("audio", (m) => {
+    const d = JSON.parse(m.data);
+    mark("i-vo", d.audioBase64 ? "done" : "fail");
+    if (!d.audioBase64) return;
+    iaudio.set(turn.id, d.audioBase64);
+    repaint(turn);
+    queueSpeak(d.audioBase64);
+  });
+  es.addEventListener("done", (m) => {
+    const d = JSON.parse(m.data);
+    $("pt4").textContent = `live pipeline — complete in ${(d.total / 1000).toFixed(1)}s`;
+    finish();
+  });
+  es.addEventListener("error", (m) => {
+    let msg = "stream dropped";
+    try { msg = JSON.parse(m.data).error || msg; } catch (e) {}
+    I.forEach((x) => { if ($(x).className.includes("run")) mark(x, "fail"); });
     $("pt4").textContent = "live pipeline — failed";
-    turn.pending = false; turn.error = String(e.message || e);
-    $("e4").textContent = String(e.message || e);
-    saveI(); paintThread();
-  } finally { iInFlight = false; $("go4").disabled = false; $("int").dataset.fromVoice = "0"; }
+    turn.stage = ""; turn.error = msg; $("e4").textContent = msg;
+    repaint(turn); finish();
+  });
+  es.onerror = () => { if (!closed) { turn.stage = ""; turn.error = turn.error || "connection lost"; repaint(turn); finish(); } };
 }
+
+/* ---- hands-free visit: the mic opens once and stays open ----
+   No press-to-talk and no turn taking. A voice-activity detector cuts each utterance at the
+   pause that follows it, sends that segment, and keeps listening. Because a WebM stream is only
+   decodable from its own header, each segment is a fresh MediaRecorder over the SAME open
+   getUserMedia stream: the recorder restarts, the microphone never closes and the browser never
+   re-prompts. */
+let callOn = false, iStream = null, iCtx = null, iAn = null, iMeter = null, iTick = null;
+let segRec = null, segChunks = [], segVoiced = false, segStart = 0;
+let vadRaf = null, lastVoice = 0, callStart = 0, iStarting = false;
+const VAD_ON = 0.075;      // speech starts
+const VAD_HANG = 850;      // silence that ends an utterance, ms
+const SEG_MIN = 700;       // ignore a cough, ms
+const SEG_MAX = 22000;     // REST STT is capped under 30s
+
+// One voice at a time, and never over someone who is still talking.
+const speakQ = [];
+let speaking = false;
+function queueSpeak(b64) { speakQ.push(b64); drainSpeak(); }
+function drainSpeak() {
+  if (speaking || !speakQ.length) return;
+  speaking = true;
+  const a = new Audio("data:audio/wav;base64," + speakQ.shift());
+  const done = () => { speaking = false; drainSpeak(); };
+  a.onended = done; a.onerror = done;
+  a.play().catch(done);
+}
+
+function fmtClock(ms) {
+  const s = Math.floor(ms / 1000);
+  return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+async function sttBlob(blob, fast) {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  if (buf.length < 2200) return null;
+  let bin = "";
+  for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+  const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ audioBase64: btoa(bin), mime: blob.type || "audio/webm", fast: Boolean(fast) }) });
+  const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
+  return d;
+}
+function setState(txt, cls) {
+  $("livestate").textContent = txt;
+  $("livebar").classList.toggle("hot", cls === "hot");
+  $("livebar").classList.toggle("cut", cls === "cut");
+}
+function newSegment() {
+  if (!callOn || !iStream) return;
+  segChunks = []; segVoiced = false; segStart = Date.now();
+  const CANDIDATES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus", "audio/ogg"];
+  const picked = CANDIDATES.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+  segRec = picked ? new MediaRecorder(iStream, { mimeType: picked }) : new MediaRecorder(iStream);
+  const mime = segRec.mimeType || "audio/webm";
+  segRec.ondataavailable = (e) => { if (e.data && e.data.size) segChunks.push(e.data); };
+  segRec.onstop = () => {
+    const chunks = segChunks, voiced = segVoiced;
+    segChunks = [];
+    if (callOn) newSegment();              // reopen instantly: no gap in the conversation
+    if (!voiced || !chunks.length) return; // silence is not a turn
+    sendSegment(new Blob(chunks, { type: mime }));
+  };
+  segRec.start(400);
+}
+function cutSegment() { if (segRec && segRec.state === "recording") segRec.stop(); }
+
+async function sendSegment(blob) {
+  setState("transcribing", "cut");
+  try {
+    const d = await sttBlob(blob, false);
+    const val = d && (d.transcript || d.drugLatin || "");
+    if (!val) { setState("listening", ""); return; }
+    // The language that came back IS the answer to "who just spoke" — no toggling, no guessing.
+    let who = speaker;
+    if ($("iauto").checked && d.detectedLang) {
+      const det = d.detectedLang;
+      if (det === $("ifrom").value) who = "patient";
+      else if (det === $("ito").value) who = "doctor";
+      else who = speaker;
+      setSpeaker(who);
+    }
+    setState(callOn ? "listening" : "ended", "");
+    interpret(val, who);
+  } catch (e) { setState("listening", ""); $("e4").textContent = "STT: " + String(e.message || e); }
+}
+
+function vadLoop() {
+  vadRaf = requestAnimationFrame(vadLoop);
+  if (!iAn) return;
+  const buf = new Uint8Array(iAn.frequencyBinCount);
+  iAn.getByteTimeDomainData(buf);
+  let peak = 0;
+  for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128) / 128);
+  const now = Date.now();
+  if (peak > VAD_ON) {
+    lastVoice = now;
+    if (!segVoiced) { segVoiced = true; setState("hearing you", "hot"); }
+  }
+  const dur = now - segStart;
+  if (segVoiced && now - lastVoice > VAD_HANG && dur > SEG_MIN) cutSegment();
+  else if (dur > SEG_MAX && segVoiced) cutSegment();
+  else if (!segVoiced && dur > 12000) { segChunks = []; segStart = now; } // don't bank silence
+}
+
+async function startCall() {
+  if (iStarting || callOn) return;
+  try {
+    iStarting = true;
+    iStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    callOn = true; callStart = Date.now();
+    $("cbar").classList.add("live"); $("mic4").classList.add("rec"); $("mic4").textContent = "LIVE";
+    $("e4").textContent = ""; setState("listening", "");
+    sessionMark();
+    iTick = setInterval(() => ($("livetime").textContent = fmtClock(Date.now() - callStart)), 200);
+    iCtx = new (window.AudioContext || window.webkitAudioContext)();
+    iAn = iCtx.createAnalyser(); iAn.fftSize = 512;
+    iCtx.createMediaStreamSource(iStream).connect(iAn);
+    iMeter = barMeter($("livewave"), levelFrom(iAn), { color: "#CEFF32", dim: "#235347" });
+    lastVoice = 0; vadLoop();
+    newSegment();
+    iStarting = false;
+  } catch (e) {
+    iStarting = false; callOn = false; $("cbar").classList.remove("live");
+    $("e4").textContent = "Mic: " + String(e.message || e);
+  }
+}
+function endCall() {
+  if (!callOn) return;
+  callOn = false;
+  cutSegment();                                   // the last utterance still gets sent
+  cancelAnimationFrame(vadRaf); clearInterval(iTick);
+  if (iMeter) { iMeter.stop(); iMeter = null; }
+  if (iCtx) { iCtx.close().catch(() => {}); iCtx = null; }
+  iAn = null;
+  if (iStream) { iStream.getTracks().forEach((t) => t.stop()); iStream = null; }
+  $("cbar").classList.remove("live"); $("mic4").classList.remove("rec"); $("mic4").textContent = "START";
+}
+$("mic4").onclick = () => (callOn ? endCall() : startCall());
+$("stop4").onclick = endCall;
+
+// Each visit is its own block in the transcript, so an old consultation cannot be mistaken for
+// this one.
+function sessionMark() {
+  if (!iturns.length) return;
+  if (iturns[iturns.length - 1].sess) return;
+  iturns.push({ id: "s" + Date.now(), sess: true, label: "new visit · " + new Date().toLocaleTimeString() });
+  saveI(); paintThread();
+}
+
 loadI(); paintThread(); setSpeaker("patient");
 
 /* ---------- TAB 5: live duplex consultation ---------- */
