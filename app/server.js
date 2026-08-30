@@ -133,12 +133,46 @@ async function openFdaRecalls(drugRaw) {
 
 // WHO's falsified/substandard alert index — the international-ban authority. One scrape,
 // cached, reused across every drug in a prescription.
-async function whoAlertIndex() {
+// ---------- warm evidence store (the corpus that is the SAME for every question) ----------
+// The CDSCO alerts index and the WHO falsified-medicine index do not depend on what the user
+// asked, so scraping them on the request path taxed every single answer with a 202-poll. They
+// are refreshed on a timer in the background instead, and the hot path only ever reads memory.
+// A cold store degrades the answer (documented in the card), it never blocks it.
+const WARM_MS = Number(process.env.WARM_MS || 30 * 60 * 1000);
+const WARM_SOURCES = [
+  { key: "cdsco", url: "https://cdsco.gov.in/opencms/opencms/en/Alerts/", cap: 3500 },
+  { key: "who", url: "https://www.who.int/teams/regulation-prequalification/incidents-and-SF/full-list-of-who-medical-product-alerts", cap: 60000 },
+];
+const WARM = Object.fromEntries(WARM_SOURCES.map((s) => [s.key, { md: "", at: 0, chars: 0, error: null }]));
+let warming = false;
+
+async function warmAll(force) {
+  if (warming) return WARM;
+  warming = true;
   try {
-    const page = await anakinScrape("https://www.who.int/teams/regulation-prequalification/incidents-and-SF/full-list-of-who-medical-product-alerts");
-    return (page.markdown || "");
-  } catch (e) { console.error("who alerts skipped:", e.message); return ""; }
+    await Promise.all(WARM_SOURCES.map(async (src) => {
+      const slot = WARM[src.key];
+      if (!force && slot.md && Date.now() - slot.at < WARM_MS) return;
+      try {
+        // force bypasses the disk cache so a refresh actually re-reads the regulator.
+        if (force) { try { fs.unlinkSync(path.join(CACHE_DIR, cacheKey("scrape:" + src.url) + ".json")); } catch {} }
+        const page = await anakinScrape(src.url);
+        const md = (page.markdown || "").slice(0, src.cap);
+        if (md) { slot.md = md; slot.at = Date.now(); slot.chars = md.length; slot.error = null; }
+        else slot.error = "empty markdown";
+      } catch (e) { slot.error = String(e.message || e); console.error(`warm ${src.key} failed:`, slot.error); }
+    }));
+  } finally { warming = false; }
+  return WARM;
 }
+// Read-only accessors. They NEVER await a network call, so no request ever waits on a scrape.
+function warmMd(key) {
+  const slot = WARM[key];
+  if (!slot) return "";
+  if (Date.now() - slot.at > WARM_MS) warmAll().catch(() => {}); // refresh behind the answer
+  return slot.md || "";
+}
+function whoAlertIndex() { return warmMd("who"); }
 
 // Pull only the WHO alert lines that mention this drug — the full index is ~40k chars and
 // would drown the model, and a substring hit IS the citation.
@@ -208,8 +242,27 @@ async function sarvamTransliterate(input, target) {
 
 // Latin letters carrying a non-English language = romanized input the translator cannot read.
 const looksLatin = (t) => !/[\u0900-\u0DFF]/.test(String(t)) && /[a-z]/i.test(String(t));
+const SCRIPT_NAME = { "hi-IN": "Devanagari", "mr-IN": "Devanagari", "kn-IN": "Kannada", "te-IN": "Telugu",
+  "ta-IN": "Tamil", "bn-IN": "Bengali", "gu-IN": "Gujarati", "ml-IN": "Malayalam", "od-IN": "Odia", "pa-IN": "Gurmukhi" };
+
+// Romanized speech is ambiguous and a plain transliterator resolves it by SPELLING, not by
+// meaning: "Chaati me jalan" came back as चाटी (tongue-ish) instead of छाती (chest), and every
+// downstream hop then faithfully carried "my tongue is burning" into the doctor's language.
+// The model is given the consultation context and picks the medically sensible word. It costs
+// the same round trip the transliterator did, and the transliterator stays as the fallback.
 async function toNativeScript(text, lang) {
   if (lang === "en-IN" || !looksLatin(text)) return text;
+  const script = SCRIPT_NAME[lang];
+  if (script) {
+    try {
+      const out = await sarvamChat([
+        { role: "system", content: `You clean up speech typed in Roman letters before a translator reads it. Output the SAME sentence written in the native script of ${lang} (${script}), nothing else. It is a doctor visit, so pick the medically sensible word when a Roman spelling is ambiguous (chaati/seene = chest, pet = stomach, sar = head, gala = throat). Do not translate to English, do not explain. Output only the sentence in ${script}.` },
+        { role: "user", content: String(text).slice(0, 600) },
+      ], 300, "sarvam-105b-conversations");
+      const clean = String(out || "").trim().split("\n")[0].trim();
+      if (clean && !looksLatin(clean)) return clean;
+    } catch (e) { console.error("script normalise skipped:", e.message); }
+  }
   try { return await sarvamTransliterate(text, lang); }
   catch (e) { console.error("transliterate skipped:", e.message); return text; }
 }
@@ -275,11 +328,9 @@ app.post("/api/check", async (req, res) => {
     const wirePriceRaw = priceRes.kind === "wire" ? JSON.stringify(priceRes.data).slice(0, 2500) : "";
 
     // 2. Scrape CDSCO alerts index for month-level authority (cached after first hit)
-    let cdscoMd = "";
-    try {
-      const page = await anakinScrape("https://cdsco.gov.in/opencms/opencms/en/Alerts/");
-      cdscoMd = (page.markdown || "").slice(0, 3500);
-    } catch (e) { console.error("cdsco scrape skipped:", e.message); }
+    // Warm store, read from memory. No scrape on the request path.
+    const cdscoMd = warmMd("cdsco");
+    if (!cdscoMd) degraded.push("cdsco-index");
 
     // 3. Verdict from sarvam-105b, strict JSON
     const context = [
@@ -331,7 +382,7 @@ app.post("/api/prescription", async (req, res) => {
   const T0 = Date.now(); const timings = {}; const T = (n, t) => { timings[n] = Date.now() - t; };
   try {
     // 1. Pull the drug list out of free speech ("I'll start her on Augmentin 625 and Pan 40")
-    const whoP = whoAlertIndex(); // fire immediately: depends on nothing
+    const whoP = Promise.resolve(whoAlertIndex()); // warm store: resolves instantly
     const tExtract = Date.now();
     const listRaw = await sarvamChat([
       { role: "system", content: 'Extract every medicine mentioned. Reply ONLY a minified JSON array of strings, brand or generic name plus strength if stated, Latin script. Example: ["Augmentin 625","Pan 40"]. No other text.' },
@@ -471,24 +522,28 @@ app.post("/api/interpret", async (req, res) => {
   try {
     const tTr = Date.now();
     const text = await toNativeScript(rawText, from);
-    // One English pivot, shared. Then the OUTPUT chain (translate -> speak) and the CLINICAL read
-    // are independent, so they run concurrently instead of one after the other.
-    const en = from === "en-IN" ? text : await sarvamTranslateTo(text, from, "en-IN");
-    timings.pivot = Date.now() - tTr;
+    timings.script = Date.now() - tTr;
 
+    // The listener's chain and the doctor's clinical read no longer share an English pivot.
+    // sarvam-translate:v1 goes indic-to-indic directly, so the two legs start at the SAME
+    // moment instead of one waiting on the other. On a Hindi -> Kannada turn that is one
+    // whole round trip off the wall clock, and it is also the better translation (one hop,
+    // not two).
     const tOut = Date.now();
     const speakChain = (async () => {
-      const translated = to === "en-IN" ? en : (from === to ? text : await sarvamTranslate(en, to));
+      const translated = from === to ? text : await sarvamTranslateTo(text, from, to);
       let audio = null;
       try { audio = await sarvamTTS(translated, to); } catch (e) { console.error("tts skipped:", e.message); }
       return { translated, audio };
     })();
 
-    // Only the patient's turn needs clinical structuring; the doctor's turn is an instruction.
+    // Only the patient's turn needs clinical structuring; the doctor's turn is an instruction,
+    // so a doctor turn never pays for the English pivot at all.
     const clinicalP = speaker !== "patient" ? Promise.resolve(null) : (async () => {
+      const en = from === "en-IN" ? text : await sarvamTranslateTo(text, from, "en-IN");
       const raw = await sarvamChat([
         { role: "system", content: 'You help a doctor understand a patient who does not share their language. Reply ONLY minified JSON: {"complaint":"<=14 words chief complaint in clinical English","duration":"<=6 words or empty","redFlags":["urgent finding", ...],"askBack":["<=12 word follow-up question the doctor should ask, phrased for the patient", ...up to 3]}. Never diagnose and never name a medicine.' },
-        { role: "user", content: `Patient said (translated to English): "${en}"` },
+        { role: "user", content: `Patient said: "${en}"` },
       ], 1500, "sarvam-105b-conversations");
       return extractJson(raw);
     })();
@@ -549,7 +604,21 @@ app.post("/api/symptoms", async (req, res) => {
   } catch (e) { res.status(502).json({ error: String(e.message || e) }); }
 });
 
-app.get("/api/health", (_req, res) => res.json({ sarvamKey: Boolean(process.env.SARVAM_API_KEY), anakinKey: Boolean(process.env.ANAKIN_API_KEY) }));
+app.get("/api/health", (_req, res) => res.json({
+  sarvamKey: Boolean(process.env.SARVAM_API_KEY),
+  anakinKey: Boolean(process.env.ANAKIN_API_KEY),
+  warm: Object.fromEntries(Object.entries(WARM).map(([k, v]) => [k, { chars: v.chars, ageSec: v.at ? Math.round((Date.now() - v.at) / 1000) : null, error: v.error }])),
+}));
+
+// Manual re-read of the regulator corpus, for a demo or an ops nudge. Force skips the disk cache.
+app.post("/api/warm", async (req, res) => {
+  const w = await warmAll(Boolean((req.body || {}).force));
+  res.json(Object.fromEntries(Object.entries(w).map(([k, v]) => [k, { chars: v.chars, error: v.error }])));
+});
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Davaa Sach http://localhost:${port}`));
+app.listen(port, () => {
+  console.log(`Davaa Sach http://localhost:${port}`);
+  warmAll().then(() => console.log("warm store ready:", Object.entries(WARM).map(([k, v]) => `${k}=${v.chars}`).join(" ")));
+  setInterval(() => warmAll(true).catch(() => {}), WARM_MS);
+});

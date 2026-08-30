@@ -525,12 +525,12 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
   </div>
 </section>
 
-<!-- ============ s5 · three modes ============ -->
+<!-- ============ s5 · four modes ============ -->
 <section class="slide" id="s5">
   <div class="wrap">
-    <div class="eyebrow rv" style="--i:0">three ways in &mdash; all shipped, all live</div>
-    <h2 class="rv" style="--i:1">One pipeline. <em>Three questions</em> people actually ask.</h2>
-    <div class="grid g3" style="margin-top:28px">
+    <div class="eyebrow rv" style="--i:0">four ways in &mdash; all shipped, all live</div>
+    <h2 class="rv" style="--i:1">One pipeline. <em>Four questions</em> people actually ask.</h2>
+    <div class="grid g4" style="margin-top:28px">
       <div class="card rv" style="--i:2">
         <div class="tag">POST /api/check</div>
         <h3 style="margin-top:8px">&ldquo;Is this medicine safe?&rdquo;</h3>
@@ -549,8 +549,14 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
         <p>Never prescribes, never gives a dose, never says skip the doctor. It triages urgency and hands you <b>the questions to ask</b> &mdash; and escalates to emergency on real red flags.</p>
         <div class="row"><span class="chip sig-r" style="border-color:rgba(255,45,59,.4)">emergency</span><span class="chip sig-a" style="border-color:rgba(255,176,32,.4)">see_doctor</span><span class="chip sig-g" style="border-color:rgba(0,226,122,.4)">routine</span></div>
       </div>
+      <div class="card rv" style="--i:5">
+        <div class="tag">POST /api/interpret</div>
+        <h3 style="margin-top:8px">&ldquo;We do not share a language.&rdquo;</h3>
+        <p>A live consultation interpreter. The patient speaks Hindi, the doctor hears Kannada &mdash; and the doctor also gets a <b>clinical read</b>: chief complaint, duration, red flags, and the questions to ask back.</p>
+        <div class="row"><span class="chip">indic &rarr; indic direct</span><span class="chip">5.4s</span></div>
+      </div>
     </div>
-    <p class="lead rv" style="--i:5;margin-top:26px">All three share one evidence layer and one voice layer. Adding a mode costs a prompt, not a rebuild.</p>
+    <p class="lead rv" style="--i:6;margin-top:26px">All four share one evidence layer and one voice layer. Adding a mode costs a prompt, not a rebuild. The interpreter never pivots through English &mdash; <code>sarvam-translate:v1</code> goes Hindi to Kannada in one hop, which is both faster and the better translation.</p>
   </div>
 </section>
 
@@ -738,11 +744,11 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
     <h2 class="rv" style="--i:1">Honest about the cold path.<br><em>Ruthless</em> about the second one.</h2>
     <div class="grid g4" style="margin-top:28px">
       <div class="stat rv" style="--i:2"><div class="num" data-to="50" data-suf="s">0</div><div class="cap">cold answer</div></div>
-      <div class="stat rv" style="--i:3"><div class="num sig-g" data-to="0.035" data-dec="3" data-suf="s">0</div><div class="cap">cached answer</div></div>
-      <div class="stat rv" style="--i:4"><div class="num foil" data-to="1400" data-suf="&times;">0</div><div class="cap">the gap</div></div>
-      <div class="stat rv" style="--i:5"><div class="num" data-to="52">0</div><div class="cap">responses on disk</div></div>
+      <div class="stat rv" style="--i:3"><div class="num sig-g" data-to="0.024" data-dec="3" data-suf="s">0</div><div class="cap">cached answer</div></div>
+      <div class="stat rv" style="--i:4"><div class="num foil" data-to="2000" data-suf="&times;">0</div><div class="cap">the gap</div></div>
+      <div class="stat rv" style="--i:5"><div class="num sig-a" data-to="5.6" data-dec="1" data-suf="&times;">0</div><div class="cap">faster after one model swap</div></div>
     </div>
-    <p class="lead rv" style="--i:6;margin-top:26px">A cold answer is a scrape, a Wire job and three Sarvam calls, and we will not pretend otherwise on stage. Every one of them is cached by content hash, so the second ask is instant &mdash; and the cache is what keeps a 300-credit free tier alive through a demo, a rehearsal and a room full of judges typing the same drug.</p>
+    <p class="lead rv" style="--i:6;margin-top:26px">A cold answer is a scrape, a Wire job and three Sarvam calls, and we will not pretend otherwise on stage. <b>Anakin is never the bottleneck</b> &mdash; a scrape is 1&ndash;3.6s, a search 1&ndash;2s. The single reasoning call was <b>87% of total time</b>; moving it to <code>sarvam-105b-conversations</code> cut it from 43.5s to 7.8s <b>for an identical verdict</b>, because the budget had been going into reasoning tokens we discard. Prescription review now lands in 13.8s, the interpreter in 5.4s.</p>
     <div class="pillrow rv" style="--i:7">
       <span class="pill">search <b>3</b> credits</span>
       <span class="pill">scrape <b>1</b></span>
@@ -889,6 +895,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
         <li><span>reasoning</span><b>sarvam-105b</b></li>
         <li><span>translation</span><b>sarvam-translate:v1</b></li>
         <li><span>voice</span><b>bulbul:v3 &middot; ishita, priya</b></li>
+        <li><span>low latency reasoning</span><b>sarvam-105b-conversations</b></li>
         <li><span>live web &amp; data</span><b>Anakin.io</b></li>
         <li><span>search</span><b>Anakin Search API</b></li>
         <li><span>pages</span><b>Anakin URL Scraper</b></li>
@@ -1133,14 +1140,14 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
     s2:"THE PICTURE. Pause on the wall before the red ones land. 'One of these will hurt you. Which one?' Wait. Then let them turn red.",
     s3:"THE WALL. The truth is public, current and free. It is just an English PDF. Under 11% of India speaks any English (2011 Census).",
     s4:"WHAT IT IS. A verdict card, NOT a chatbot. Say that explicitly -- judging guidance penalises 'generic AI chatbot bolted on'.",
-    s5:"THREE MODES. All three are shipped and live. Prescription mode is the one nobody expects -- free speech in, per-drug interactions and international bans out.",
+    s5:"FOUR MODES, all shipped and live. Prescription mode is the one nobody expects -- free speech in, per-drug interactions and international bans out. The INTERPRETER is the one to linger on: patient speaks Hindi, doctor hears Kannada, and the doctor also gets chief complaint, red flags and the questions to ask back. No English pivot.",
     s6:"THE TWO VERDICTS. This is the credibility slide. Telma 40 is a REAL counterfeit found live, not a seeded example. Then Dolo 650 green. Showing both proves it discriminates.",
     s7:"DEMO. Switch to the browser. Mic first: 'Dolo 650 safe hai kya?'. Then TYPE Telma 40 (red), then Dolo 650 (green). Then repeat one to show the cache is instant. If the mic mishears, type it -- same endpoint, safer live.",
     s8:"ARCHITECTURE. Six hops, every one is a sponsor API or a regulator. Point at degraded[] -- that is the safety story in one array.",
     s9:"SARVAM. Four models, four different jobs. The kill test: remove it and there is no way in and no way out. English was never the product.",
     s10:"ANAKIN. Search, Scraper, Wire. Lead with WHY WIRE: 1mg is a React storefront, a scraper dies silently on their next deploy. Then the ask: cdsco.gov.in as a catalog action.",
     s11:"SOURCES (backup). Five authorities. The line to land is 'absence is evidence' -- no US label is a FINDING, not a missing field.",
-    s12:"SPEED (backup). 50s cold, 0.035s cached. Say the cold number first, unprompted. Owning it is what makes the cached number believable.",
+    s12:"SPEED (backup). ~50s cold, 0.024s cached. Say the cold number FIRST, unprompted -- owning it is what makes the cached number believable. The strong line: Anakin was never the bottleneck; one reasoning call was 87% of the time, and swapping to sarvam-105b-conversations cut 43.5s to 7.8s for the SAME verdict.",
     s13:"FAILS SAFE (backup). The strongest slide if a judge is technical. An unchecked answer is amber and is never cached.",
     s14:"LIMITS (backup). Say these before anyone asks. Batch-level PDFs sit behind POST forms -- and the fix is a Wire catalog action, not a scraper.",
     s15:"NEXT (backup). WhatsApp voice notes is the one that lands -- the people who need this will never open a web app.",
