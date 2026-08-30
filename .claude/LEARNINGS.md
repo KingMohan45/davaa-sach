@@ -22,6 +22,23 @@ Latin-only and the language is not English. Verified both directions before and 
 transliterated first. When a translation looks plausible but clinically wrong, suspect the script
 before the model.
 
+**Amended 2026-08-30 — the transliterator was itself the next silent hop.** `/transliterate`
+resolves a Roman spelling by SPELLING, not by meaning, and has no idea it is in a clinic:
+`"Chaati me jalan hoti hai"` came back as **चाटी** (tongue-ish) instead of **छाती** (chest), and
+every hop after it faithfully carried *"my tongue is burning at night"* into the doctor's language.
+Fluent, confident, wrong organ, second time in the same pipeline for the same reason.
+
+The fix is a `sarvam-105b-conversations` call that is TOLD it is a doctor visit and asked to output
+the same sentence in the target script (`SCRIPT_NAME[lang]`), with `/transliterate` kept as the
+fallback and a `looksLatin()` guard on the result. Same round trip as the transliterator it
+replaced (~1.0s), and it fixes the class rather than one word.
+
+**How to apply:** when a translation chain's output is wrong, walk it from the FIRST hop. A
+normalisation step (transliterate, unicode-fold, slugify, romanise, autocorrect) is where meaning
+is lost most cheaply and most silently, because every hop downstream is then perfectly correct
+about the wrong input. And a normaliser that can be given DOMAIN CONTEXT usually should be: the
+ambiguity is real, and only the context resolves it.
+
 ## 2. `sarvam-105b` is a reasoning model and is the wrong default
 
 Measured A/B on the real prescription payload, identical prompt:
@@ -108,9 +125,14 @@ extract 3399ms | evidence 1368ms | review 54241ms | voice 3473ms | total 62484ms
 **Review was 87%.** Anakin scrape is 1.0–3.6s internal, 2.5–4.6s wall; search is 1–2s. Every
 instinct to "parallelize the fetches" would have bought nothing.
 
-Second win after the model swap: one shared English pivot, then the output chain
-(translate → TTS) and the clinical read run concurrently instead of in sequence.
-`/api/interpret` went ~7s → **2.7s**.
+Second win after the model swap: the output chain (translate → TTS) and the clinical read run
+concurrently instead of in sequence. `/api/interpret` went ~7s → **2.7s**.
+
+**Superseded 2026-08-30:** there is no longer a shared English pivot. `sarvam-translate:v1` goes
+indic-to-indic in one hop, so the listener's chain and the clinical read now start at the *same*
+moment rather than one waiting on the other, and a **doctor's** turn never pays for an English
+pivot at all (nothing structures an instruction). Measured `hi-IN -> kn-IN` patient turn:
+`script 1.0s | outAndClinical 2.5-3.6s | total 3.5-4.6s` including TTS.
 
 **How to apply:** instrument stages and return the timings in the response body before touching
 anything. The UI then shows them too, which is its own demo asset.
@@ -123,3 +145,46 @@ makes the demo survive a bad room.
 
 A degraded answer (any evidence leg unreachable) is **never** cached, so a transient outage cannot
 freeze a wrong "all clear" into the store.
+
+## 9. A corpus that is identical for every question does not belong on the request path
+
+The CDSCO alerts index and the WHO falsified-medicine index do not depend on what the user asked,
+yet both were scraped inside `/api/check`, so **every** answer paid an Anakin 202-poll for bytes
+that were the same as the previous caller's. The disk cache hid it from the second request onward,
+which is exactly why it survived: the only person who ever felt it was the first user after a cold
+start, and at a demo that is the judge.
+
+They are now a warm store — refreshed at boot and on a `WARM_MS` timer, read from memory by
+`warmMd(key)`, which **never awaits a network call**. A cold store degrades the answer (it pushes
+`cdsco-index` onto `degraded`) and never blocks it. `GET /api/health` reports each source's size
+and age, `POST /api/warm {force:true}` re-reads past the disk cache.
+
+Boot receipt: `cdsco=3500 who=39936` chars, both ~3s after listen.
+
+**How to apply:** for each fetch on a request path, ask *does this response depend on the request?*
+If not, it is a background refresh with a memory read in front of it. And make the accessor
+structurally incapable of blocking (return the slot, fire the refresh, never `await` it), because a
+"cache with a fallback fetch" quietly becomes a request-path fetch again the moment it expires.
+
+## 10. Driving the debug browser over raw CDP: two traps that read as "the browser is broken"
+
+Both cost a call each while verifying the chat UI, and **both were already written down** in
+`~/.claude/skills/test-ui/SKILL.md` §11 — running that skill's `ensure-browser.sh` is not the same
+as reading the section that covers the client you are about to hand-roll.
+
+1. **`websocket.create_connection(WS)` fails with `Handshake status 403 Forbidden`** — Chrome
+   rejects the `Origin` header the python client sends by default. Fix is
+   `create_connection(WS, timeout=30, suppress_origin=True)`. The error text points at
+   `--remote-allow-origins`, i.e. at relaunching the browser, which is the wrong fix.
+2. **`export BU_CDP_WS=...` does not survive to the next Bash call.** Shell state is not persisted
+   between tool calls, so the variable was empty and `websocket` reported `ValueError: url is
+   invalid` — which reads as a malformed endpoint, not as an empty variable. Resolve the WS URL in
+   the SAME command that uses it:
+   `WS=$(curl -s http://127.0.0.1:9333/json/version | python3 -c "import sys,json;print(json.load(sys.stdin)['webSocketDebuggerUrl'])")`.
+
+Also: macOS python3 is PEP-668 managed, so `pip install websocket-client` is refused. Use a venv
+(`python3 -m venv /tmp/cdpvenv`), do not reach for `--break-system-packages`.
+
+**The probe that actually settles a half-wired page** (from the TDZ entry in root `CLAUDE.md`):
+`typeof <someConst>` vs `typeof <someFunction>` — consts die at a throw, function declarations are
+hoisted and survive, so the pair locates a dead line that leaves no console error.

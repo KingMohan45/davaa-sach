@@ -8,9 +8,13 @@ no second process, no build step).
 
 ## Team photos (end credits, slide 18)
 
-Right now all four cards show a monogram, because no photo files exist yet.
+**Done — all four real photos are cropped and in place.** Originals are in `team/src/`,
+crops are `team/{ashish,joshua,anil,mohan}.jpg`. All four detected a face
+(`mode=face`, none fell back to a guess).
 
-1. Save the four originals into `team/src/`, named exactly:
+To replace a photo:
+
+1. Drop the new original into `team/src/`, named exactly:
    `ashish.*`, `joshua.*`, `anil.*`, `mohan.*` (any of .jpg .jpeg .png .heic .webp)
 2. Run `./team/make-team.sh`
 3. Reload the deck.
