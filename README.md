@@ -1,6 +1,6 @@
 # 💊 Davaa Sach
 
-Speak a medicine name in **Kannada, Hindi, Telugu or Tamil** — hear, in your own language, whether India's drug regulator (CDSCO) flagged it as **Not-of-Standard-Quality or spurious** this month, plus what it costs online right now.
+Speak a medicine name in **Kannada, Hindi, Telugu Punjabi or Tamil** — hear, in your own language, whether India's drug regulator (CDSCO) flagged it as **Not-of-Standard-Quality or spurious** this month, plus what it costs online right now.
 
 Half of India can't read the regulator's English PDF alerts. Every month CDSCO flags real medicines as substandard or fake. The answer isn't in any model's weights — it's on the live web, in a language the user can't read. That's why both sponsor APIs are load-bearing, not decoration.
 
