@@ -185,10 +185,30 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
 }
 /* Narrow phones: the mic + field + Send row cannot hold all three, and Send is what falls off the
    right edge. Drop Send to its own full-width line instead of clipping it. */
-@media(max-width:430px){
+/* .acts is a grouping element only; on a wide screen the buttons stay direct children of .pair. */
+.acts{display:contents}
+
+/* The transcript is the screen, and on a 390px phone the chrome was taking 55% of it: a
+   three-row header, a wrapped turn row, a wrapped Send, and two example sentences stacked.
+   Anything that is a LIST of chips becomes one horizontally scrollable row instead of wrapping
+   into new rows, which is the only thing that costs height. */
+@media(max-width:760px){
+  .acts{display:flex;flex:1 1 100%;gap:5px;overflow-x:auto;padding-bottom:2px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .acts::-webkit-scrollbar{display:none}
+  .acts > *{flex:0 0 auto}
+  .turnrow,.hint{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .turnrow::-webkit-scrollbar,.hint::-webkit-scrollbar{display:none}
+  .turnrow > *,.hint > *{flex:0 0 auto}
+  .autosw{white-space:nowrap}
+  .hint .ex{max-width:64vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media(max-width:360px){
   .cbar{flex-wrap:wrap}
   .cin{flex:1 1 auto}
   .send{flex:1 1 100%;order:3;height:46px}
+}
+@media(max-width:430px){
   /* Every pixel the header keeps is a pixel the transcript loses, and the transcript is the
      screen. Shrink the chrome rather than letting it take a third of a small phone. */
   header{padding:8px 11px;gap:7px}
@@ -213,11 +233,13 @@ window.APP_BASE = (location.pathname.match(/^(\/[^/]+)(?:\/|$)/) || ["", ""])[1]
     <span class="tag pat">Patient</span><select id="ifrom" class="pill"></select>
     <span class="swap" id="iswap" title="Swap">&#8646;</span>
     <span class="tag doc">Doctor</span><select id="ito" class="pill"></select>
-    <button class="ghost" id="i-copy">Copy visit</button>
-    <button class="ghost" id="i-del">Delete visit</button>
-    <a class="navlink" href="./">All tools</a>
-    <a class="navlink alt" href="deck/">Deck &#8599;</a>
-    <a class="navlink alt2" href="pitch">Pitch video &#8599;</a>
+    <div class="acts">
+      <button class="ghost" id="i-copy">Copy visit</button>
+      <button class="ghost" id="i-del">Delete visit</button>
+      <a class="navlink" href="./">All tools</a>
+      <a class="navlink alt" href="deck/">Deck &#8599;</a>
+      <a class="navlink alt2" href="pitch">Pitch video &#8599;</a>
+    </div>
   </div>
 </header>
 

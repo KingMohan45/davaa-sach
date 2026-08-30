@@ -2,7 +2,7 @@
 
 **Project name:** Davaa Sach (दवा सच / ಔಷಧಿ ಸತ್ಯ)
 
-**Team members:** <fill>
+**Team members:** Mohan Kumar R, Ashish Kumar, Joshua Premkumar, Anil Dandina
 
 **One-sentence pitch:** Speak a medicine name in Kannada, Hindi, Telugu, Tamil or English and hear, in your own language, whether India's drug regulator flagged it as Not-of-Standard-Quality or spurious this month — plus what it costs on Tata 1mg right now.
 
