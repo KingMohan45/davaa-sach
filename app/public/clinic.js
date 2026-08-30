@@ -8,7 +8,7 @@ const LNAME = Object.fromEntries(LANGS);
 const VKEY = "davaa.visits.v1";
 const OLDKEY = "davaa.interpret.v2";   // the tabbed page's flat thread, imported once
 const VAD_ON = 0.075;    // level at which we call it speech
-const VAD_HANG = 850;    // silence that ends an utterance, ms
+const VAD_HANG = 700;    // silence that ends an utterance, ms
 const SEG_MIN = 700;     // shorter than this is a cough, not a sentence
 const SEG_MAX = 22000;   // REST STT is capped under 30s
 
@@ -72,14 +72,17 @@ for (const [sel, def] of [["ifrom","hi-IN"],["ito","kn-IN"]]) {
 }
 $("iswap").onclick = () => { const a = $("ifrom").value; $("ifrom").value = $("ito").value; $("ito").value = a; };
 for (const s of ["ifrom","ito"]) $(s).onchange = () => { const v = cur(); v.from = $("ifrom").value; v.to = $("ito").value; save(); paintHistory(); };
-let lastSpoke = "doctor";   // so the first utterance is attributed to the patient
-function setSpeaker(w) { speaker = w; }
-// Say out loud what was heard and who it was credited to, so a wrong attribution is visible
-// rather than silent.
-function setDetected(lang, who) {
-  const el = $("detected"); if (!el) return;
-  el.textContent = lang ? `heard ${LNAME[lang] || lang} · logged as ${who}` : "";
+// Speaker is a MANUAL control. Language auto-detection mis-attributed real consultations
+// (code-mixed speech detects as en-IN), so the pills are the truth and the only automation left
+// is the deterministic hand-over after each turn, which is what a consultation actually does.
+function setSpeaker(w) {
+  speaker = w;
+  $("sp-pat").classList.toggle("on", w === "patient");
+  $("sp-doc").classList.toggle("on", w === "doctor");
+  $("int").placeholder = w === "patient" ? "or type what the patient said" : "or type what the doctor said";
 }
+$("sp-pat").onclick = () => setSpeaker("patient");
+$("sp-doc").onclick = () => setSpeaker("doctor");
 
 /* ---------- history rail ---------- */
 function fmtWhen(ts) {
@@ -119,7 +122,7 @@ $("i-del").onclick = () => {
 };
 $("i-copy").onclick = async () => {
   const v = cur();
-  const txt = [`Davaa Sach visit · ${fmtWhen(v.at)} · ${LNAME[v.from] || v.from} <-> ${LNAME[v.to] || v.to}`, ""]
+  const txt = [`Doctor Globe visit · ${fmtWhen(v.at)} · ${LNAME[v.from] || v.from} <-> ${LNAME[v.to] || v.to}`, ""]
     .concat(v.turns.map((t) => `${t.speaker === "patient" ? "Patient" : "Doctor"} (${LNAME[t.from] || t.from}): ${t.original}\n  -> ${t.translated || ""}`)).join("\n");
   try { await navigator.clipboard.writeText(txt); $("i-copy").textContent = "Copied"; setTimeout(() => ($("i-copy").textContent = "Copy visit"), 1400); }
   catch (e) { $("e4").textContent = "Clipboard blocked by the browser."; }
@@ -188,7 +191,9 @@ function bubble(t) {
   const who = document.createElement("div"); who.className = "who";
   who.textContent = (t.speaker === "patient" ? "Patient" : "Doctor") + " · " + (LNAME[t.from] || t.from);
   const bub = document.createElement("div"); bub.className = "bub";
-  const said = document.createElement("div"); said.className = "said"; said.textContent = t.original;
+  const said = document.createElement("div"); said.className = "said";
+  said.textContent = t.original || "\u{1F399} …";
+  if (!t.original) said.style.opacity = ".55";
   bub.appendChild(said);
   if (t.error) {
     bub.classList.add("fail");
@@ -276,17 +281,33 @@ function paintAll() { paintHistory(); paintThread(); paintNote(); }
 // Re-entrant on purpose: in a hands-free visit the next sentence starts before the previous
 // turn's voice has rendered, and a single in-flight guard would drop speech on the floor.
 let iOpen = 0;
-function interpret(spokenText, who) {
-  const text = (spokenText || $("int").value).trim(); if (!text) return;
-  const v = cur(), visitId = v.id;
-  iOpen++; $("e4").textContent = ""; $("heard").textContent = "";
-  const sp = who || speaker;
+function startTurn(text, sp, stage) {
+  const v = cur();
   const from = sp === "patient" ? $("ifrom").value : $("ito").value;
   const to = sp === "patient" ? $("ito").value : $("ifrom").value;
   const turn = { id: "t" + Date.now() + Math.random().toString(36).slice(2, 6), speaker: sp, from, to,
-    original: text, translated: "", clinical: null, stage: "reading the script" };
-  v.turns.push(turn); $("int").value = "";
+    original: text, translated: "", clinical: null, stage: stage || "reading the script", visitId: v.id };
+  v.turns.push(turn);
   paintThread(); paintHistory();
+  return turn;
+}
+function dropTurn(turn) {
+  const v = byId(turn.visitId); if (!v) return;
+  v.turns = v.turns.filter((t) => t.id !== turn.id);
+  if (store.currentId === turn.visitId) { paintThread(); paintHistory(); }
+}
+function interpret(spokenText, who, existing) {
+  const text = (spokenText || $("int").value).trim(); if (!text) { if (existing) dropTurn(existing); return; }
+  iOpen++; $("e4").textContent = ""; $("heard").textContent = "";
+  const sp = who || speaker;
+  const turn = existing || startTurn(text, sp);
+  const visitId = turn.visitId;
+  turn.original = text; turn.stage = "reading the script";
+  const from = turn.from, to = turn.to;
+  $("int").value = "";
+  if (store.currentId === visitId) { repaint(turn); paintHistory(); }
+  // typed path hands the mic over too, same as voice
+  if (!existing && $("iauto").checked) setSpeaker(sp === "patient" ? "doctor" : "patient");
 
   const qs = new URLSearchParams({ text, from, to, speaker: sp });
   const es = new EventSource("/api/interpret/stream?" + qs.toString());
@@ -389,24 +410,24 @@ function cutSegment() { if (segRec && segRec.state === "recording") segRec.stop(
 
 async function sendSegment(blob) {
   setState("transcribing", "cut");
+  // The utterance is attributed to whoever the pill says, CAPTURED NOW — the hand-over below
+  // must not re-label an utterance that is still in flight.
+  const who = speaker;
+  // Paint the bubble immediately, before STT answers. The wait is ~1s of transcription and it
+  // used to be a wait on nothing; now the turn is on screen from the moment the pause cut it.
+  const turn = startTurn("", who, "transcribing");
+  if ($("iauto").checked) setSpeaker(who === "patient" ? "doctor" : "patient");
   try {
     const d = await sttBlob(blob, false);
     const val = d && (d.transcript || d.drugLatin || "");
-    if (!val) { setState(callOn ? "listening" : "ended", ""); return; }
-    // The language that came back IS the answer to "who just spoke". No toggle, no guessing.
-    // When it matches neither side we do NOT keep the previous speaker: code-mixed Hindi very
-    // often detects as en-IN, and holding the last speaker would attribute a whole exchange to
-    // one person. A consultation alternates, so alternating is the better prior.
-    let who;
-    if (d.detectedLang === $("ifrom").value) who = "patient";
-    else if (d.detectedLang === $("ito").value) who = "doctor";
-    else who = lastSpoke === "patient" ? "doctor" : "patient";
-    lastSpoke = who;
-    setSpeaker(who);
-    setDetected(d.detectedLang, who);
+    if (!val) { dropTurn(turn); setState(callOn ? "listening" : "ended", ""); return; }
     setState(callOn ? "listening" : "ended", "");
-    interpret(val, who);
-  } catch (e) { setState(callOn ? "listening" : "ended", ""); $("e4").textContent = "STT: " + String(e.message || e); }
+    interpret(val, who, turn);
+  } catch (e) {
+    dropTurn(turn);
+    setState(callOn ? "listening" : "ended", "");
+    $("e4").textContent = "STT: " + String(e.message || e);
+  }
 }
 function vadLoop() {
   vadRaf = requestAnimationFrame(vadLoop);

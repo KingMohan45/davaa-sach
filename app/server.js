@@ -667,7 +667,7 @@ app.post("/api/warm", async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Davaa Sach http://localhost:${port}`);
+  console.log(`Doctor Globe http://localhost:${port}`);
   warmAll().then(() => console.log("warm store ready:", Object.entries(WARM).map(([k, v]) => `${k}=${v.chars}`).join(" ")));
   setInterval(() => warmAll(true).catch(() => {}), WARM_MS);
 });

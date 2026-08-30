@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Davaa Sach · Clinic</title>
+<title>Doctor Globe · Clinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -105,6 +105,15 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
 .cin{flex:1;min-width:0;font-size:15px;font-weight:500;background:var(--void);color:var(--fg);
   border:2px solid var(--ln);border-radius:32px;padding:16px 20px;outline:none}
 .cin:focus{border-color:var(--sig)}
+.turnrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
+.pill.spk{font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;background:var(--raise);color:var(--mut);
+  border:2px solid var(--ln);border-radius:9px;padding:8px 13px;cursor:pointer}
+.pill.spk:hover{color:var(--fg)}
+#sp-pat.on{background:var(--sky);border-color:var(--sky);color:var(--ink)}
+#sp-doc.on{background:var(--sun);border-color:var(--sun);color:var(--ink)}
+.autosw{font-family:"Space Mono",monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--mut);
+  display:flex;align-items:center;gap:6px;cursor:pointer}
+.autosw input{accent-color:var(--sig);width:14px;height:14px;cursor:pointer}
 .send{background:var(--sig);color:var(--ink);border:2px solid var(--sig);border-radius:32px;padding:0 24px;height:52px;
   font-weight:700;font-size:15px;cursor:pointer}
 .livebar{display:none;flex:1;min-width:0;align-items:center;gap:12px;background:var(--void);
@@ -138,7 +147,7 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
 </head>
 <body>
 <header>
-  <div class="brand"><span class="dot" id="live"></span>Davaa <i>Sach</i> · Clinic</div>
+  <div class="brand"><span class="dot" id="live"></span>Doctor <i>Globe</i> · Clinic</div>
   <div class="pair">
     <span class="tag pat">Patient</span><select id="ifrom" class="pill"></select>
     <span class="swap" id="iswap" title="Swap">&#8646;</span>
@@ -159,6 +168,11 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
   <div class="mid">
     <div class="thread" id="ithread"></div>
     <div class="composer">
+      <div class="turnrow">
+        <button class="pill spk on" id="sp-pat">Patient speaks</button>
+        <button class="pill spk" id="sp-doc">Doctor speaks</button>
+        <label class="autosw"><input type="checkbox" id="iauto" checked /> hand the mic over after each turn</label>
+      </div>
       <div class="cbar" id="cbar">
         <button class="mic" id="mic4" title="Start the visit — the mic stays open">START</button>
         <input class="cin" id="int" placeholder="or type what was just said" />
@@ -171,7 +185,6 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
         <button class="endbtn" id="stop4" title="End the visit">END</button>
       </div>
       <div class="heard" id="heard"></div>
-      <div class="heard" id="detected" style="color:var(--mut)"></div>
       <div class="hint">
         <span class="tag">try</span>
         <button class="ex">Do din se pet me tez dard hai aur ulti ho rahi hai</button>

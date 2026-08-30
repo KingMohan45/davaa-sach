@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Davaa Sach — is your medicine real?</title>
+<title>Doctor Globe — every language, one clinic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Caveat:wght@600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -297,7 +297,7 @@ audio{width:100%;margin-top:14px;border-radius:10px}
 <body>
 <canvas id="bg3d"></canvas>
 <div class="shell">
-  <div class="brand">Davaa Sach · दवा सच</div>
+  <div class="brand">Doctor Globe · डॉक्टर ग्लोब</div>
   <h1>Is your <em>medicine</em> actually safe?</h1>
   <div class="scribble">ask out loud, in your own language</div>
   <p class="lead">India's regulator publishes its Not-of-Standard-Quality list as English PDFs. A drug restricted in Europe can still sit on the shelf here. And in any Indian hospital, the patient and the doctor often do not share a language. Four things, one pipeline, in Kannada, Hindi, Telugu, Tamil or English.</p>
@@ -447,7 +447,7 @@ audio{width:100%;margin-top:14px;border-radius:10px}
         <div class="turnpill">
           <button class="pill on" id="sp-pat" data-s="patient">Patient speaks</button>
           <button class="pill" id="sp-doc" data-s="doctor">Doctor speaks</button>
-          <span class="exlab autosw"><input type="checkbox" id="iauto" checked /> pick the speaker from the language I hear</span>
+          <span class="exlab autosw"><input type="checkbox" id="iauto" checked /> hand the mic over after each turn</span>
         </div>
         <div class="cbar" id="cbar">
           <button class="mic round" id="mic4" title="Start the visit — the mic stays open">START</button>
@@ -1046,7 +1046,7 @@ let callOn = false, iStream = null, iCtx = null, iAn = null, iMeter = null, iTic
 let segRec = null, segChunks = [], segVoiced = false, segStart = 0;
 let vadRaf = null, lastVoice = 0, callStart = 0, iStarting = false;
 const VAD_ON = 0.075;      // speech starts
-const VAD_HANG = 850;      // silence that ends an utterance, ms
+const VAD_HANG = 700;      // silence that ends an utterance, ms
 const SEG_MIN = 700;       // ignore a cough, ms
 const SEG_MAX = 22000;     // REST STT is capped under 30s
 
@@ -1107,15 +1107,11 @@ async function sendSegment(blob) {
     const d = await sttBlob(blob, false);
     const val = d && (d.transcript || d.drugLatin || "");
     if (!val) { setState("listening", ""); return; }
-    // The language that came back IS the answer to "who just spoke" — no toggling, no guessing.
-    let who = speaker;
-    if ($("iauto").checked && d.detectedLang) {
-      const det = d.detectedLang;
-      if (det === $("ifrom").value) who = "patient";
-      else if (det === $("ito").value) who = "doctor";
-      else who = speaker;
-      setSpeaker(who);
-    }
+    // Speaker is the pill, manually chosen. Auto language attribution mis-labelled real
+    // consultations (code-mixed speech detects as en-IN), so the only automation left is the
+    // deterministic hand-over after each turn.
+    const who = speaker;
+    if ($("iauto").checked) setSpeaker(who === "patient" ? "doctor" : "patient");
     setState(callOn ? "listening" : "ended", "");
     interpret(val, who);
   } catch (e) { setState("listening", ""); $("e4").textContent = "STT: " + String(e.message || e); }

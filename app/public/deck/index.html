@@ -383,7 +383,9 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
   .eyebrow{margin-bottom:14px}
   .src{padding:9px 0} .src .sd{font-size:12.5px}
   .vcard{padding:21px 21px 88px} .vreason{font-size:13.5px;margin-top:12px}
-  .port{max-width:150px} .roll{height:84px} .crew{margin-top:20px}
+  .port{max-width:140px} .roll{height:76px} .crew{margin-top:16px}
+  @keyframes crawl{from{transform:translateY(76px)}to{transform:translateY(-100%)}}
+  .quote{font-size:clamp(20px,2.7vw,34px);line-height:1.2}
   @keyframes crawl{from{transform:translateY(84px)}to{transform:translateY(-100%)}}
 }
 @media (prefers-reduced-motion:reduce){
@@ -427,7 +429,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
       <div class="wave" id="w1" style="margin-bottom:24px"></div>
       <div class="utter" id="utter"><span class="cur">&#9608;</span></div>
       <div class="xtract">
-        <span class="tag">doctor in India &nbsp;&rarr;&nbsp; patient in Germany</span>
+        <span class="tag">doctor in India &nbsp;&rarr;&nbsp; patient across a border</span>
         <span class="xarrow">&rarr;</span>
         <span class="latin">is this legal there?</span>
       </div>
@@ -449,7 +451,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
     <div class="eyebrow rv" style="--i:0">the problem</div>
     <h2 class="rv" style="--i:1">Telemedicine crossed borders.<br><em>The safety net did not.</em></h2>
     <div class="mapwrap rv" style="--i:2">
-      <svg viewBox="0 0 1100 190" role="img" aria-label="A prescription travelling from a doctor in India to a patient in Germany">
+      <svg viewBox="0 0 1100 190" role="img" aria-label="A prescription travelling from a doctor in India to a patient in Nepal">
         <path class="arc" d="M 165 128 Q 550 8 935 128"/>
         <g class="pin" style="--k:0">
           <circle cx="165" cy="128" r="11"/>
@@ -463,7 +465,7 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
         <g class="pin dest" style="--k:1">
           <circle cx="935" cy="128" r="11"/>
           <text x="935" y="163" text-anchor="middle">PATIENT</text>
-          <text x="935" y="180" text-anchor="middle" class="sub">GERMANY</text>
+          <text x="935" y="180" text-anchor="middle" class="sub">NEPAL</text>
         </g>
       </svg>
     </div>
@@ -507,3 +509,593 @@ pre.code i{color:var(--dim);font-style:normal} pre.code s{color:var(--red);text-
     <p class="lead rv" style="--i:5;margin-top:22px"><b>Safer prescriptions, and a conversation both people understand.</b></p>
   </div>
 </section>
+
+<!-- ============ s4 · verification ============ -->
+<section class="slide" id="s4">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">capability 01 &middot; powered by Anakin</div>
+    <h2 class="rv" style="--i:1">Check the medicine <em>before</em> it reaches the patient.</h2>
+    <div class="pipe" style="grid-template-columns:repeat(5,1fr)">
+      <div class="pnode" style="--k:0"><div class="pn">Doctor types<br>the medicine</div><div class="pw">app</div></div>
+      <div class="pnode ak" style="--k:1"><div class="pn">Search</div><div class="pw">Anakin</div><div class="pt">bans &middot; withdrawals</div></div>
+      <div class="pnode ak" style="--k:2"><div class="pn">Scraper</div><div class="pw">Anakin</div><div class="pt">WHO alert index</div></div>
+      <div class="pnode ak" style="--k:3"><div class="pn">openFDA</div><div class="pw">Anakin</div><div class="pt">label &middot; recalls</div></div>
+      <div class="pnode sv" style="--k:4"><div class="pn">Verdict</div><div class="pw">Sarvam</div><div class="pt">stop / caution / ok</div></div>
+    </div>
+    <div class="grid g3 rv" style="--i:2;margin-top:22px">
+      <div class="card" style="border-color:rgba(255,45,59,.3)"><div class="tag sig-r">stop</div><p style="margin-top:6px">Named in a WHO falsified alert, banned or withdrawn by a national regulator, or a documented serious interaction with another drug on the same prescription.</p></div>
+      <div class="card" style="border-color:rgba(255,176,32,.3)"><div class="tag sig-a">caution</div><p style="margin-top:6px">Restricted abroad but legal locally, a recall on record, or <b>no national label found at all</b> &mdash; reported as a finding, never as silence.</p></div>
+      <div class="card" style="border-color:rgba(0,226,122,.28)"><div class="tag sig-g">ok</div><p style="margin-top:6px">Nothing found across every source, and the answer says which sources it read and counted. A verdict with no citation is rejected before it renders.</p></div>
+    </div>
+    <p class="lead rv" style="--i:3;margin-top:20px">Regulators covered live today: <b>WHO, EMA, FDA, MHRA, Health Canada, TGA, CDSCO</b>. None of this is in a model&rsquo;s weights &mdash; it is read at the moment the doctor asks.</p>
+  </div>
+</section>
+
+<!-- ============ s5 · alert + act ============ -->
+<section class="slide" id="s5">
+  <div class="wrap two">
+    <div>
+      <div class="eyebrow rv" style="--i:0">do not just warn &mdash; help them act</div>
+      <h2 class="rv" style="--i:1">The alert arrives <em>during</em> the consultation.</h2>
+      <p class="lead rv" style="--i:2">Not in a report afterwards. While the doctor still has the patient, and can still change the plan.</p>
+      <ul class="tk a rv" style="--i:3">
+        <li>The finding names <b>which source</b> said it and <b>which country</b> acted.</li>
+        <li>Severity is ranked, so an interaction or a ban outranks a missing database entry.</li>
+        <li>Candidate options are surfaced as <b>generic names or classes, never a brand and never a dose</b>, and are themselves re-checked against the WHO alert index before being shown.</li>
+      </ul>
+      <p class="lead rv" style="--i:4;margin-top:14px"><b>The final prescription decision always stays with the doctor.</b> The system surfaces evidence; it does not overrule.</p>
+    </div>
+    <div class="rv" style="--i:5">
+      <div class="vcard red">
+        <div class="vhead"><span class="vdrug">Nimesulide</span><span class="vbadge">stop</span></div>
+        <p class="vreason">Withdrawn or restricted for this use by <b>multiple national regulators</b>; hepatotoxicity. Still routinely prescribed in some markets, which is exactly the gap a cross-border consultation falls into.</p>
+        <div class="stamp">BLOCKED ABROAD</div>
+      </div>
+      <p class="lead" style="font-size:14.5px;margin-top:14px">A drug being normal where the doctor sits says nothing about where the patient is.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s6 · language ============ -->
+<section class="slide" id="s6">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">capability 02 &middot; powered by Sarvam</div>
+    <h2 class="rv" style="--i:1">Both sides speak normally. <em>Nobody switches tabs.</em></h2>
+    <div class="grid g3" style="margin-top:24px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">patient turn</div>
+        <h3 style="margin-top:7px">Speaks their own language</h3>
+        <p>Including <b>code-mixed</b> speech, the ordinary way people actually talk &mdash; an English drug name inside a Nepali or Hindi sentence. Measured 0.947 confidence live.</p>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">doctor turn</div>
+        <h3 style="margin-top:7px">Hears it in theirs, aloud</h3>
+        <p>Translated and spoken with a voice chosen per language, then answered back the same way. Indic to Indic goes <b>direct, in one hop</b> &mdash; no English pivot, which is faster and the better translation.</p>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">and, quietly</div>
+        <h3 style="margin-top:7px">The note writes itself</h3>
+        <p>Every turn, the whole conversation is re-read into a live note: chief complaint, duration, <b>what the patient denied</b>, red flags, and the next questions to ask.</p>
+      </div>
+    </div>
+    <div class="pillrow rv" style="--i:5">
+      <span class="pill"><span class="tag">ne</span> <span class="dev">नेपाली</span></span>
+      <span class="pill"><span class="tag">hi</span> <span class="dev">दवा</span></span>
+      <span class="pill"><span class="tag">bn</span> Bengali</span>
+      <span class="pill"><span class="tag">ta</span> <span class="tam">மருந்து</span></span>
+      <span class="pill"><span class="tag">ur</span> Urdu</span>
+      <span class="pill">+ 18 more</span>
+    </div>
+    <p class="lead rv" style="--i:6;margin-top:18px">23 languages, all of them Indian-subcontinent and English &mdash; which is precisely the India&ndash;Nepal, India&ndash;Bangladesh, India&ndash;Sri Lanka and Gulf-diaspora telemedicine corridor.</p>
+  </div>
+</section>
+
+<!-- ============ s7 · end-to-end flow ============ -->
+<section class="slide" id="s7">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">end to end</div>
+    <h2 class="rv" style="--i:1">One consultation, <em>start to prescription.</em></h2>
+    <div class="pipe" style="grid-template-columns:repeat(6,1fr)">
+      <div class="pnode sv" style="--k:0"><div class="pn">Patient speaks</div><div class="pw">Sarvam</div><div class="pt">saaras:v3 codemix</div></div>
+      <div class="pnode sv" style="--k:1"><div class="pn">Doctor hears</div><div class="pw">Sarvam</div><div class="pt">translate + bulbul:v3</div></div>
+      <div class="pnode sv" style="--k:2"><div class="pn">Live note</div><div class="pw">Sarvam</div><div class="pt">complaint &middot; red flags</div></div>
+      <div class="pnode" style="--k:3"><div class="pn">Doctor prescribes</div><div class="pw">app</div><div class="pt">medicine entered</div></div>
+      <div class="pnode ak" style="--k:4"><div class="pn">Evidence</div><div class="pw">Anakin</div><div class="pt">WHO &middot; regulators &middot; FDA</div></div>
+      <div class="pnode sv" style="--k:5"><div class="pn">Alert + options</div><div class="pw">Sarvam</div><div class="pt">doctor decides</div></div>
+    </div>
+    <pre class="code rv" style="--i:2">POST /api/consult   <i>// every turn, both directions</i>
+  &rarr; { translated, audioBase64,
+      note: { complaint, duration, <b>negatives</b>, redFlags, suggestions, askBack },
+      <u>flagged</u>[],        <i>// suggestions re-checked against the WHO alert index</i>
+      timings }
+
+POST /api/prescription  <i>// before the Rx is finalised</i>
+  &rarr; { verdict: <s>"stop"</s>|"caution"|"ok", headline, findings[], sources[], <u>degraded</u>[] }</pre>
+    <p class="lead rv" style="--i:3">Evidence legs run in parallel and each has its own failure lane. A dead leg is named in <code>degraded[]</code> and forces the answer to amber &mdash; <b>an unchecked answer is never shown as a safe one</b>, and is never cached.</p>
+  </div>
+</section>
+
+<!-- ============ s8 · stack ============ -->
+<section class="slide" id="s8">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">technology</div>
+    <h2 class="rv" style="--i:1">Two sponsor APIs, <em>both load-bearing.</em></h2>
+    <div class="grid g3" style="margin-top:24px">
+      <div class="card rv" style="--i:2">
+        <div class="tag">Sarvam AI</div>
+        <h3 style="margin-top:7px">Everything spoken</h3>
+        <ul class="tk" style="margin-top:8px">
+          <li><code>saaras:v3</code> codemix speech to text</li>
+          <li><code>sarvam-105b-conversations</code> reasoning</li>
+          <li><code>sarvam-translate:v1</code> indic to indic direct</li>
+          <li><code>bulbul:v3</code> voice, per-language speaker</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--i:3">
+        <div class="tag">Anakin.io</div>
+        <h3 style="margin-top:7px">Everything current</h3>
+        <ul class="tk" style="margin-top:8px">
+          <li>Search &mdash; live regulator actions per drug</li>
+          <li>URL Scraper &mdash; WHO alert index to markdown</li>
+          <li>Wire &mdash; typed actions, structured JSON</li>
+          <li>openFDA fetched <b>through</b> Anakin, one path</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">application layer</div>
+        <h3 style="margin-top:7px">Everything else</h3>
+        <ul class="tk" style="margin-top:8px">
+          <li>Doctor console and patient view</li>
+          <li>Prescription workflow and alerting</li>
+          <li>Disk cache by content hash</li>
+          <li>Keys stay server-side, always</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pillrow rv" style="--i:5">
+      <span class="pill">express + dotenv only</span>
+      <span class="pill">no database, no vector store, <b>no RAG</b></span>
+      <span class="pill">cached turn <b class="sig-g">0.024s</b></span>
+      <span class="pill"><b class="sig-a">5.6&times;</b> faster after one model swap</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s9 · why + impact ============ -->
+<section class="slide" id="s9">
+  <div class="wrap">
+    <div class="eyebrow rv" style="--i:0">why it matters</div>
+    <h2 class="rv" style="--i:1">Telemedicine platforms know the <s>call</s>.<br>They do not know the <em>context</em>.</h2>
+    <p class="lead rv" style="--i:2">Video and booking are solved. What no platform carries is <b>where the patient is</b>, <b>what language they think in</b>, and <b>whether this medicine is safe there</b>. That is the layer we added.</p>
+    <div class="grid g3" style="margin-top:24px">
+      <div class="card rv" style="--i:3">
+        <div class="tag">for doctors</div>
+        <p style="margin-top:6px">No manual research into foreign drug regulations mid-consultation. The alert arrives while the patient is still there, ranked by what is clinically most serious.</p>
+      </div>
+      <div class="card rv" style="--i:4">
+        <div class="tag">for patients</div>
+        <p style="margin-top:6px">They are understood in their own language, and they are not handed a prescription they cannot legally or practically fill where they live.</p>
+      </div>
+      <div class="card rv" style="--i:5">
+        <div class="tag">for platforms</div>
+        <p style="margin-top:6px">One integration turns a domestic teleconsult product into one that can cross a border without taking on the regulatory blind spot by hand.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s10 · different + next ============ -->
+<section class="slide" id="s10">
+  <div class="wrap two">
+    <div>
+      <div class="eyebrow rv" style="--i:0">what makes it different</div>
+      <h2 class="rv" style="--i:1">Everyone solves one half.<br>Both halves live in <em>the same minute.</em></h2>
+      <p class="lead rv" style="--i:2">Translation tools exist. Drug databases exist. Neither is inside the consultation, and a doctor will not leave a live call to use either.</p>
+      <ul class="tk rv" style="--i:3">
+        <li><b>Sarvam</b> removes the communication barrier.</li>
+        <li><b>Anakin</b> removes the country-context barrier.</li>
+        <li>They meet in one workflow, so evidence arrives while the decision is still open.</li>
+      </ul>
+    </div>
+    <div class="card rv" style="--i:4;border-color:rgba(255,176,32,.3)">
+      <div class="tag sig-a">shipping next, in this order</div>
+      <ul class="tk a" style="margin-top:10px">
+        <li><b>Patient-country scoping.</b> Today the check asks &ldquo;who has acted on this drug, anywhere&rdquo;. Next it asks &ldquo;is it permitted <b>there</b>&rdquo; &mdash; one parameter through the search and the prompt.</li>
+        <li><b>Alternatives for a blocked drug.</b> A second pass over evidence we already fetch.</li>
+        <li>Official regulator databases in place of search, via a Wire catalog action.</li>
+        <li>Dosage and formulation validation, allergy and history checks, EHR write-back.</li>
+      </ul>
+      <p style="font-size:13px;color:var(--mut);margin-top:12px">Said plainly because a demo that hides its edges has not been driven near them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ s11 · vision + credits ============ -->
+<section class="slide" id="s11" style="background:var(--deep);background-image:none">
+  <div class="glow" style="position:absolute;inset:0;background:radial-gradient(58% 52% at 50% 42%,rgba(0,226,122,.11),transparent 72%)"></div>
+  <div class="wrap" style="text-align:center">
+    <div class="eyebrow rv" style="--i:0;justify-content:center">the vision</div>
+    <p class="quote rv" style="--i:1">Healthcare should not stop at a border.<br>Connecting doctors <em>globally</em>. Protecting patients <em>locally</em>.</p>
+    <div class="crew">
+      <div class="mate rv" style="--i:2">
+        <div class="port" style="--i:0"><img src="team/ashish.jpg" alt="Ashish Kumar" data-mono="AK"></div>
+        <div class="role">engineer</div><div class="name">Ashish Kumar</div>
+      </div>
+      <div class="mate rv" style="--i:3">
+        <div class="port" style="--i:1"><img src="team/joshua.jpg" alt="Joshua Premkumar" data-mono="JP"></div>
+        <div class="role">engineer</div><div class="name">Joshua Premkumar</div>
+      </div>
+      <div class="mate rv" style="--i:4">
+        <div class="port" style="--i:2"><img src="team/anil.jpg" alt="Anil Dandina" data-mono="AD"></div>
+        <div class="role">engineer</div><div class="name">Anil Dandina</div>
+      </div>
+      <div class="mate rv" style="--i:5">
+        <div class="port" style="--i:3"><img src="team/mohan.jpg" alt="Mohan Kumar R" data-mono="MR"></div>
+        <div class="role">engineer</div><div class="name">Mohan Kumar R</div>
+      </div>
+    </div>
+    <div class="roll rv" style="--i:6">
+      <ul>
+        <li><span>speech &amp; language</span><b>Sarvam AI</b></li>
+        <li><span>speech to text</span><b>saaras:v3 &middot; codemix</b></li>
+        <li><span>reasoning</span><b>sarvam-105b-conversations</b></li>
+        <li><span>translation</span><b>sarvam-translate:v1</b></li>
+        <li><span>voice</span><b>bulbul:v3</b></li>
+        <li><span>live web &amp; data</span><b>Anakin.io</b></li>
+        <li><span>search &middot; scraper &middot; wire</span><b>Anakin APIs</b></li>
+        <li><span>alerts</span><b>World Health Organization</b></li>
+        <li><span>regulators</span><b>EMA &middot; FDA &middot; MHRA &middot; CDSCO</b></li>
+        <li><span>pharmacology</span><b>openFDA</b></li>
+        <li><span>occasion</span><b>AI Engineer Mixer &middot; 30 Aug 2026</b></li>
+      </ul>
+    </div>
+    <h1 class="foil rv" style="--i:7;margin-top:14px;font-size:clamp(38px,6.4vw,86px)">Doctor Globe</h1>
+    <p class="lead rv" style="--i:8;margin:8px auto 0;text-align:center;font-size:15px">Sarvam AI for communication. Anakin.io for country-aware intelligence. <b>Thank you.</b></p>
+  </div>
+</section>
+
+<script>
+/* ===========================================================================
+   Deck engine. Scroll-snap sections + a .seen class that arms every CSS
+   animation, so the whole deck still reads as a document with JS disabled --
+   the reveals just start visible. Nothing here computes layout; it only
+   decides WHEN a section is allowed to animate.
+   ========================================================================= */
+(function(){
+  "use strict";
+  try{ history.scrollRestoration='manual'; }catch(_){}
+  if(!location.hash) scrollTo(0,0);
+
+  var REDUCE=false;
+  try{ REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){}
+
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var dots=document.getElementById('dots');
+  var cur=document.getElementById('cur');
+  var tot=document.getElementById('tot');
+  if(tot) tot.textContent=String(slides.length);
+  var idx=0, btns=[];
+
+  slides.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.type='button'; b.title='Slide '+(i+1);
+    b.setAttribute('aria-label','Go to slide '+(i+1));
+    b.onclick=function(){ go(i); };
+    dots.appendChild(b); btns.push(b);
+  });
+
+  function paintIdx(){
+    cur.textContent=String(idx+1).padStart(2,'0');
+    btns.forEach(function(b,i){
+      var on=(i===idx);
+      b.classList.toggle('on',on);
+      if(on) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current');
+    });
+    var pb=document.getElementById('pdfbtn');
+    var fs=!!(document.fullscreenElement||document.webkitFullscreenElement);
+    if(pb) pb.style.display=(fs||(idx!==0&&idx!==slides.length-1))?'none':'';
+  }
+
+  /* .seen is sticky: a section that has been reached keeps its revealed state,
+     so scrolling back does not replay every stagger in the middle of a talk. */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      idx=slides.indexOf(e.target);
+      e.target.classList.add('seen');
+      paintIdx();
+    });
+  },{threshold:0.01,rootMargin:'-45% 0px -45% 0px'});
+  slides.forEach(function(s){ io.observe(s); });
+
+  /* Holding an arrow key must not queue a stack of smooth scrolls -- anything
+     within 420ms of the last nav lands instantly instead. */
+  var navAt=0;
+  function go(n){
+    idx=Math.max(0,Math.min(slides.length-1,n));
+    var now=(window.performance&&performance.now)?performance.now():Date.now();
+    var fast=(now-navAt)<420; navAt=now;
+    slides[idx].scrollIntoView({behavior:(fast||REDUCE)?'auto':'smooth'});
+    slides[idx].classList.add('seen');
+    paintIdx();
+  }
+  window.__deckGo=go;
+  window.__deckIdx=function(){ return idx; };
+
+  /* ---------------- waveform ---------------- */
+  function wave(el,n){
+    if(!el) return;
+    for(var i=0;i<n;i++){
+      var b=document.createElement('i');
+      /* deterministic pseudo-random so the bar profile is stable across
+         reloads and identical in an exported PDF */
+      var h=10+((i*37)%7)*6+((i*13)%5)*4;
+      b.style.setProperty('--k',i);
+      b.style.setProperty('--h',h+'px');
+      el.appendChild(b);
+    }
+  }
+  wave(document.getElementById('w0'),56);
+  wave(document.getElementById('w1'),56);
+
+  /* ---------------- blister wall ----------------
+     100 identical pockets; a handful turn red on a delay. The point of the
+     slide is that they are indistinguishable until the regulator says so, so
+     the "bad" indices are fixed rather than random -- the same pockets every
+     run, which also means the PDF export matches what the room saw. */
+  (function(){
+    var host=document.getElementById('blister'); if(!host) return;
+    var BAD=[7,23,41,58,66,89], j=0;
+    for(var i=0;i<100;i++){
+      var d=document.createElement('div');
+      d.className='pk'; d.style.setProperty('--k',i);
+      if(BAD.indexOf(i)>=0){ d.classList.add('bad'); d.style.setProperty('--j',j++); }
+      host.appendChild(d);
+    }
+  })();
+
+  /* ---------------- cold open ----------------
+     The utterance is the VERBATIM saaras:v3 transcript of "Dolo 650 safe hai
+     kya?" -- codemix STT returns native script, so the digits come back as
+     Hindi words. That is the whole reason the extraction step downstream
+     exists, so the slide has to show the real output, not a tidied one. */
+  var UTTER='डोलो छः सौ पचास सेफ है क्या?';
+  function graphemes(s){
+    try{
+      if(typeof Intl!=='undefined' && Intl.Segmenter){
+        var seg=new Intl.Segmenter('hi',{granularity:'grapheme'});
+        return Array.from(seg.segment(s),function(x){ return x.segment; });
+      }
+    }catch(_){}
+    return Array.from(s);           /* conjuncts may split; still legible */
+  }
+  var GR=graphemes(UTTER);
+
+  var cines=[].slice.call(document.querySelectorAll('.cine'));
+  cines.forEach(function(sec){
+    var out=sec.querySelector('#utter');
+    var timer=null;
+    sec.__play=function(){
+      sec.classList.remove('playing');
+      void sec.offsetWidth;                       /* restart the CSS timeline */
+      sec.classList.add('playing');
+      if(!out) return;
+      if(timer){ clearTimeout(timer); timer=null; }
+      if(REDUCE){ out.textContent=UTTER; return; }
+      out.innerHTML='<span class="cur">█</span>';
+      var i=0;
+      timer=setTimeout(function step(){
+        i++;
+        out.innerHTML=GR.slice(0,i).join('')+(i<GR.length?'<span class="cur">█</span>':'');
+        if(i<GR.length) timer=setTimeout(step,128);
+      },820);
+    };
+    var rp=sec.querySelector('.replay');
+    if(rp) rp.addEventListener('click',function(){ sec.__play(); });
+  });
+  var cio=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting && !e.target.dataset.played){
+        e.target.dataset.played='1';
+        e.target.__play();
+      }
+    });
+  },{threshold:0.5});
+  cines.forEach(function(s){ cio.observe(s); });
+
+  /* ---------------- number counters ----------------
+     Armed off .seen rather than on load, so the numbers count in when the
+     slide is actually on screen. Each element runs at most once. */
+  var nums=[].slice.call(document.querySelectorAll('[data-to]'));
+  function runNum(el){
+    if(el.dataset.ran) return; el.dataset.ran='1';
+    var to=parseFloat(el.dataset.to)||0;
+    var dec=parseInt(el.dataset.dec||'0',10);
+    var suf=el.dataset.suf||'';
+    if(REDUCE){ el.innerHTML=to.toFixed(dec)+suf; return; }
+    var t0=null, D=1150;
+    function frame(t){
+      if(t0===null) t0=t;
+      var p=Math.min(1,(t-t0)/D);
+      var e=1-Math.pow(1-p,3);                    /* ease-out cubic */
+      var v=to*e;
+      el.innerHTML=(dec?v.toFixed(dec):Math.round(v).toLocaleString('en-IN'))+suf;
+      if(p<1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  var nio=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting) runNum(e.target); });
+  },{threshold:0.4});
+  nums.forEach(function(n){ nio.observe(n); });
+
+  /* ---------------- keyboard ---------------- */
+  function toggleFs(){
+    var el=document.documentElement;
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+    } else {
+      (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+    }
+  }
+  addEventListener('keydown',function(e){
+    var t=e.target;
+    if(t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    var ctl=t && t.closest && t.closest('button,a,[role="button"]');
+    if(ctl && (e.key===' '||e.key==='Enter')) return;
+    var k=e.key;
+    if(k==='ArrowDown'||k==='ArrowRight'||k==='PageDown'||k===' '){ e.preventDefault(); go(idx+1); }
+    else if(k==='ArrowUp'||k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); go(idx-1); }
+    else if(k==='Home'){ e.preventDefault(); go(0); }
+    else if(k==='End'){ e.preventDefault(); go(slides.length-1); }
+    else if(k.toLowerCase()==='f'){ e.preventDefault(); toggleFs(); }
+    else if(k.toLowerCase()==='r'){ var s=slides[idx]; if(s&&s.__play){ e.preventDefault(); s.__play(); } }
+    else if(k.toLowerCase()==='n'){ e.preventDefault(); openNotes(); }
+    else if(k.toLowerCase()==='p' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); exportPDF(); }
+  });
+
+  /* ---------------- progress ---------------- */
+  var fill=document.getElementById('fill');
+  function progress(){
+    var max=document.documentElement.scrollHeight-innerHeight;
+    var p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+    fill.style.width=(p*100).toFixed(2)+'%';
+  }
+  addEventListener('scroll',progress,{passive:true});
+  addEventListener('resize',progress); progress();
+
+  ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){
+    document.addEventListener(ev,function(){
+      var t=idx;
+      requestAnimationFrame(function(){ slides[t].scrollIntoView({behavior:'auto'}); progress(); paintIdx(); });
+    });
+  });
+
+  /* ---------------- presenter notes (press N) ----------------
+     A second window, polled rather than pushed, so closing it can never wedge
+     the deck. Notes live here only; nothing is persisted anywhere. */
+  var NOTES={
+    s0:"TITLE. Leave up while people settle. Name the two capabilities in one breath: cross-border prescription safety, and real-time two-way voice.",
+    s1:"COLD OPEN. Let it run. The scenario is a doctor in India and a patient across a border. Two questions no video platform answers: what did the patient actually SAY, and is this prescription safe WHERE THEY LIVE.",
+    s2:"THE PROBLEM. Two barriers, one arc on screen. Do not rush the map -- the Rx travelling is the whole idea.",
+    s3:"SOLUTION. One AI layer, two jobs. Say explicitly: this is NOT another video-call product, it sits inside the consultation.",
+    s4:"VERIFICATION. Five hops. The line that lands: none of this is in a model's weights, it is read at the moment the doctor asks. Name the regulators out loud.",
+    s5:"ALERT. The point is TIMING -- during the consultation, while the doctor can still change the plan. And say clearly: the doctor always decides, we surface evidence.",
+    s6:"LANGUAGE. Code-mixed is Sarvam's documented differentiator, say the word. Indic-to-indic goes direct, no English pivot. 23 languages = exactly the India-Nepal/Bangladesh/Sri Lanka/Gulf corridor. NOTE: Sarvam has NO German -- never demo a European language.",
+    s7:"FLOW. Point at degraded[] -- that is the safety story in one array. An unchecked answer is never shown as a safe one and is never cached.",
+    s8:"STACK. Both sponsors load-bearing. Good stat to drop: no database, no vector store, no RAG. 0.024s cached. 5.6x faster after moving off the heavy reasoning model, same verdict.",
+    s9:"WHY. Video and booking are solved; context is not. Three audiences, one line each, keep moving.",
+    s10:"DIFFERENT + NEXT. Be honest about the two gaps: country scoping and alternatives. Owning them is what makes everything else believable.",
+    s11:"CLOSE. Slow down. Read the vision line, name the team, stop talking."
+  };
+  var pw=null;
+  function openNotes(){
+    try{
+      if(pw && !pw.closed){ pw.focus(); return; }
+      pw=window.open('','davaa-notes','width=560,height=640');
+      if(!pw) return;
+      var d=pw.document;
+      d.open();
+      d.write('<!doctype html><meta charset="utf-8"><title>Presenter notes</title>');
+      d.write('<style>body{margin:0;background:#08080A;color:#F5F1E8;font:15px/1.6 system-ui,sans-serif;padding:22px}'
+        +'h1{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#948F84;font-weight:700;margin:0 0 14px}'
+        +'#n{font-size:19px;line-height:1.55;min-height:220px}'
+        +'#t{font-family:ui-monospace,Menlo,monospace;font-size:30px;color:#00E27A;margin:18px 0 6px}'
+        +'#x{font-size:13px;color:#6A665E;border-top:1px solid rgba(245,241,232,.14);padding-top:14px;margin-top:18px}'
+        +'b{color:#00E27A}</style>');
+      d.write('<h1>Davaa Sach &middot; presenter</h1><div id="t">0:00</div>'
+        +'<div id="s" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#948F84;margin-bottom:12px"></div>'
+        +'<div id="n"></div><div id="x"></div>');
+      d.close();
+      var t0=Date.now();
+      var iv=pw.setInterval(function(){
+        if(pw.closed){ pw.clearInterval(iv); return; }
+        var s=slides[idx], id=s?s.id:'';
+        var secs=Math.floor((Date.now()-t0)/1000);
+        pw.document.getElementById('t').textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
+        pw.document.getElementById('s').textContent='slide '+(idx+1)+' / '+slides.length+'  ·  '+id;
+        pw.document.getElementById('n').textContent=NOTES[id]||'';
+        var nx=slides[idx+1];
+        pw.document.getElementById('x').textContent=nx?('next →  '+(NOTES[nx.id]||'').slice(0,110)):'end of deck';
+      },250);
+      pw.document.addEventListener('keydown',function(e){
+        if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); go(idx+1); }
+        else if(e.key==='ArrowLeft'){ e.preventDefault(); go(idx-1); }
+      });
+    }catch(_){}
+  }
+
+
+  /* ---------------- credits portraits ----------------
+     A missing or unreadable portrait must degrade to a monogram, never to the
+     browser's broken-image glyph -- this is the last slide anyone sees. Checked
+     with .complete/naturalWidth too, because a file cached as a 0-byte response
+     fires `load`, not `error`. */
+  (function(){
+    function mono(img){
+      var p=img.parentElement; if(!p||p.querySelector('.mono')) return;
+      var d=document.createElement('div');
+      d.className='mono'; d.textContent=img.getAttribute('data-mono')||'';
+      img.remove(); p.appendChild(d);
+    }
+    [].slice.call(document.querySelectorAll('.port img')).forEach(function(img){
+      img.addEventListener('error',function(){ mono(img); });
+      if(img.complete && !img.naturalWidth) mono(img);
+    });
+  })();
+
+  /* ---------------- landscape PDF export ---------------- */
+  function exportPDF(){
+    var btn=document.getElementById('pdfbtn');
+    var old=btn?btn.textContent:'';
+    if(!window.html2canvas || !window.jspdf){ setTimeout(function(){ window.print(); },80); return; }
+    if(btn) btn.textContent='Building...';
+    var W=1280,H=720;
+    document.body.classList.add('exporting');
+    slides.forEach(function(s){ s.classList.add('seen'); });   /* nothing exports mid-reveal */
+    var ready=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    ready.then(function(){
+      var jsPDF=window.jspdf.jsPDF;
+      var pdf=new jsPDF({orientation:'landscape',unit:'px',format:[W,H],compress:true});
+      var pages=slides.filter(function(s){ return s.id!=='s0'; });  /* holding screen is for the room */
+      var i=0;
+      function next(){
+        if(i>=pages.length){
+          pdf.save('davaa-sach-deck.pdf');
+          document.body.classList.remove('exporting');
+          if(btn) btn.textContent=old;
+          return;
+        }
+        var s=pages[i], prev=s.getAttribute('style')||'';
+        var bg=getComputedStyle(s).backgroundColor;
+        if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent') bg='#08080A';
+        s.style.width=W+'px'; s.style.height=H+'px'; s.style.minHeight='0';
+        s.style.display='flex'; s.style.alignItems='center'; s.style.justifyContent='center';
+        s.style.padding='34px 58px';
+        html2canvas(s,{scale:2,width:W,height:H,windowWidth:W,windowHeight:H,
+          backgroundColor:bg,useCORS:false,imageTimeout:4000,logging:false})
+        .then(function(canvas){
+          s.setAttribute('style',prev);
+          if(btn) btn.textContent=(i+1)+'/'+pages.length;
+          if(i>0) pdf.addPage([W,H],'landscape');
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,H);
+          i++; next();
+        })
+        .catch(function(err){
+          s.setAttribute('style',prev);
+          console.error(err);
+          document.body.classList.remove('exporting');
+          if(btn) btn.textContent=old;
+        });
+      }
+      next();
+    });
+  }
+  document.getElementById('pdfbtn').addEventListener('click',exportPDF);
+
+  paintIdx();
+  slides[0].classList.add('seen');
+})();
+</script>
+</body>
+</html>
