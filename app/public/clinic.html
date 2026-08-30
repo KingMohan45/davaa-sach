@@ -152,6 +152,12 @@ aside{border-right:var(--bd)} .rail{border-left:var(--bd)}
 .err{color:var(--reject);font-size:12.5px;font-weight:600;margin-top:8px;min-height:16px}
 @media(max-width:1100px){main{grid-template-columns:210px 1fr}.rail{display:none}}
 @media(max-width:760px){main{grid-template-columns:1fr}aside{display:none}.msg{max-width:92%}}
+.navlink{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;text-decoration:none;display:inline-block;color:var(--ink,#051F20);
+  background:var(--sig,#CEFF32);border:2px solid var(--ink,#051F20);border-radius:30px;
+  padding:6px 13px;box-shadow:3px 3px 0 var(--void,#020B0B);transition:.15s}
+.navlink:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--void,#020B0B)}
+.navlink.alt{background:var(--sky,#7CB9E8)} .navlink.alt2{background:var(--peach,#FDA481)}
 </style>
 <script>
 // The app is served both at the domain root and mounted under /doctorglobe. Every API call below
@@ -168,9 +174,9 @@ window.APP_BASE = (location.pathname.match(/^(\/[^/]+)(?:\/|$)/) || ["", ""])[1]
     <span class="tag doc">Doctor</span><select id="ito" class="pill"></select>
     <button class="ghost" id="i-copy">Copy visit</button>
     <button class="ghost" id="i-del">Delete visit</button>
-    <a class="ghost" href="./" style="text-decoration:none;display:inline-block">All tools</a>
-    <a class="ghost" href="deck/" style="text-decoration:none;display:inline-block">Deck &#8599;</a>
-    <a class="ghost" href="pitch" style="text-decoration:none;display:inline-block">Pitch video &#8599;</a>
+    <a class="navlink" href="./">All tools</a>
+    <a class="navlink alt" href="deck/">Deck &#8599;</a>
+    <a class="navlink alt2" href="pitch">Pitch video &#8599;</a>
   </div>
 </header>
 

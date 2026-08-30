@@ -13,9 +13,12 @@
   .nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
   .brand{display:inline-flex;align-items:center;gap:8px;background:var(--raise);border:1px solid var(--line);
          border-radius:999px;padding:7px 14px;font-weight:600;letter-spacing:.2px}
-  a.btn{color:var(--fg);text-decoration:none;background:var(--raise);border:1px solid var(--line);
-        border-radius:999px;padding:7px 13px;font-size:13px}
-  a.btn:hover{border-color:#3a4552}
+  a.btn{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:700;
+        letter-spacing:.09em;text-transform:uppercase;text-decoration:none;display:inline-block;
+        color:#051F20;background:#CEFF32;border:2px solid #051F20;border-radius:30px;
+        padding:7px 14px;box-shadow:3px 3px 0 #020B0B;transition:.15s}
+  a.btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 #020B0B}
+  a.btn.alt{background:#7CB9E8} a.btn.alt2{background:#FDA481}
   h1{font-size:26px;margin:6px 0 4px}
   p.lead{color:var(--muted);margin:0 0 18px}
   video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000;display:block}
@@ -26,8 +29,8 @@
   <div class="nav">
     <span class="brand">Doctor Globe · डॉक्टर ग्लोब</span>
     <a class="btn" href="../">App</a>
-    <a class="btn" href="../deck/">Deck &#8599;</a>
-    <a class="btn" href="../clinic">Clinic</a>
+    <a class="btn alt" href="../deck/">Deck &#8599;</a>
+    <a class="btn alt2" href="../clinic">Clinic &#8599;</a>
   </div>
   <h1>The pitch</h1>
   <p class="lead">Four things, one pipeline, in Kannada, Hindi, Telugu, Tamil or English.</p>

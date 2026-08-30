@@ -188,3 +188,41 @@ Also: macOS python3 is PEP-668 managed, so `pip install websocket-client` is ref
 **The probe that actually settles a half-wired page** (from the TDZ entry in root `CLAUDE.md`):
 `typeof <someConst>` vs `typeof <someFunction>` — consts die at a throw, function declarations are
 hoisted and survive, so the pair locates a dead line that leaves no console error.
+
+## 11. Shipping this Node app to Cloudflare Workers (k45.to/doctorglobe)
+
+`server.js` runs on express + a disk cache; a Worker has neither. The port is generated, not
+copied: `build-worker.mjs` reads `server.js`, applies four replacements, and **asserts each one
+matched exactly once**, so a shape change in the server fails the build instead of shipping a
+half-port. It also refuses to emit a file still containing `from "fs"`, `app.listen(` or
+`setInterval(`. `worker-shell.js` is the only hand-written half (express shim, router, SSE via
+TransformStream, KV, asset serving). `npm run deploy` = build + `wrangler deploy`.
+
+Four things that cost a cycle each:
+
+1. **`wrangler kv key list` reads the LOCAL miniflare state by default, not the namespace you
+   deployed against.** It printed `[]` and `Value not found` while the Worker was writing the key
+   perfectly, so I diagnosed a persistence bug that did not exist and shipped a "fix" for it.
+   `--remote` returned the key immediately. Any `wrangler kv` read that is evidence needs
+   `--remote`; a local-simulator default is indistinguishable from an empty remote.
+2. **A Worker route on a zone with no DNS record fails as `Could not resolve host`, not 404.**
+   `k45.to` was an active zone with zero A records, so the route was bound and unreachable. The
+   OAuth token `wrangler login` mints has **no DNS scope** (`wrangler login --scopes-list` offers
+   none), so the record cannot be added from here. The way through is the Workers **custom
+   domain** API, which creates the DNS itself off the workers scope:
+   `PUT /accounts/<acc>/workers/domains {environment, hostname, service, zone_id}`. Note it takes
+   over the WHOLE hostname, not a path.
+3. **The asset server's own `html_handling` redirects drop a sub-path mount.** Requesting
+   `/clinic.html` returns 307 to `/clinic` — built from the prefix-stripped path the Worker hands
+   it, so the Location pointed at `k45.to/clinic`, outside the mount, and `/doctorglobe/clinic`
+   bounced forever. Fix: pass the path through unchanged and re-prefix any 3xx `location` the
+   asset binding emits.
+4. **The warm store must be KV, not isolate memory.** An isolate dies between demo clicks, and a
+   cold store answers off an empty WHO index — a degraded answer that looks exactly like a working
+   one. `hydrateWarm` on each request, `persistWarm` in `waitUntil`, and explicitly after
+   `/api/warm` (server.js's own handler knows nothing about KV).
+
+Pages are served both at the root and under `/doctorglobe`, so every client call goes through
+`window.APP_BASE`, and in-page links are relative (`deck/`, `pitch`, `clinic`, `./`). `/doctorglobe`
+without a trailing slash is 302'd to `/doctorglobe/` first, or every relative link resolves one
+directory too high.
